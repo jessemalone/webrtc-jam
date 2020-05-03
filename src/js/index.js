@@ -1,3 +1,90 @@
 'use strict';
 
+import * as player from './player'
+import * as rtc from './rtc'
+import RTCSignaller from './signalling'
+
+const mediaStreamConstraints = {
+    audio: true,
+    video: false
+}
+let signaller = new RTCSignaller("localhost:8765");
+let localPeer;
+let remotePeer;
+
+
+function handleLocalMediaStreamError(error) {
+    console.log(error);
+}
+function gotLocalMediaStream(stream) {
+    // Add Player
+    tracks = document.getElementById("tracks");
+    let track = player.addPlayer(tracks);
+    track.srcObject = stream;
+    // Create peer connection
+    localPeer = rtc.createPeer();
+    localPeer.addStream(stream);
+    //
+    // Create offer
+    const offerOptions = {
+        offerToReceiveAudio: 1,
+    }
+    localPeer.createOffer(offerOptions)
+        .then(function(offer){
+            localPeer.setLocalDescription(offer).then(()=>{}).catch(rtc.logError);
+        signaller.sendOffer(offer);
+        }).catch(rtc.logError);
+
+}
+
+function gotRemoteMediaStream(event) {
+    console.log("got remote stream");
+    // Add player
+    tracks = document.getElementById("tracks");
+    let remoteTrack = player.addPlayer(tracks);
+    remoteTrack.srcObject = event.stream;
+}
+
+
+signaller.onOffer(function(offer) {
+    console.log("GOT OFFER");
+
+    // Create remote peer connection
+    //let remotePeer = rtc.createPeer();
+
+    window.localPeer = localPeer;
+    window.offer = offer;
+    console.log(offer.type);
+    if (offer.type === "answer") {
+        var sdp_id = offer.sdp.match(/o=.*/)[0];
+        var local_sdp_id = localPeer.localDescription.sdp.match(/o=.*/)[0];
+        if (sdp_id != local_sdp_id) {
+            console.log("got an answer");
+            localPeer.setRemoteDescription(offer);
+            localPeer.onaddstream = gotRemoteMediaStream
+        }
+    } else if (offer.type === "offer") {
+        var sdp_id = offer.sdp.match(/o=.*/)[0];
+        var local_sdp_id = localPeer.localDescription.sdp.match(/o=.*/)[0];
+
+        if (sdp_id != local_sdp_id) {
+            console.log("got remote offer");
+            localPeer.setRemoteDescription(offer);
+            localPeer.createAnswer().then(function(answer) {
+                console.log("sending answer");
+                localPeer.setLocalDescription(answer);
+                signaller.sendOffer(answer);
+            });
+            localPeer.onaddstream = gotRemoteMediaStream
+        }
+
+    }
+
+
+    //remotePeer.addStream(stream);
+  
+});
+
+navigator.mediaDevices.getUserMedia(mediaStreamConstraints)
+    .then(gotLocalMediaStream).catch(handleLocalMediaStreamError);
 
