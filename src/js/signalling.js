@@ -1,7 +1,7 @@
 'use strict'
 
 function RTCSignaller(websocketHost) {
-    this.offersSocket = new WebSocket("ws://" + websocketHost + "/offer");
+    this.offersSocket = new WebSocket("ws://" + websocketHost + "/ws/offer");
 }
 
 RTCSignaller.prototype.sendOffer = function(offer) {

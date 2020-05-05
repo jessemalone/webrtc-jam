@@ -1,7 +1,7 @@
 {
     "scripts": {
-        "js:build": "webpack src/js/index.js -o assets/js/bundle.js",
-        "js:watch": "webpack -w src/js/index.js -o assets/js/bundle.js --mode=development",
+        "js:build": "webpack src/js/index.js -o public/assets/js/bundle.js",
+        "js:watch": "webpack -w src/js/index.js -o public/assets/js/bundle.js --mode=development",
         "build": "npm run js:build",
         "watch": "npm run js:watch"
     },

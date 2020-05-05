@@ -9,8 +9,13 @@ function logIce(event) {
 
 export function createPeer() {
     // Local Peer Connection
-    const servers = null
-    let localPeerConnection = new RTCPeerConnection(servers)
+    const config = {
+        iceServers: [
+            {urls: ["stuns:stun1.l.google.com:19302"]},
+            {urls: ["stuns:stun2.l.google.com:19302"]}
+        ]
+    }
+    let localPeerConnection = new RTCPeerConnection(config)
     localPeerConnection.addEventListener('icecandidate', logIce);
     //localPeerConnection.addEventListener('iceconnectionstatechange', handleConnectionStateChange);
 

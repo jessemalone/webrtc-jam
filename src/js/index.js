@@ -8,7 +8,7 @@ const mediaStreamConstraints = {
     audio: true,
     video: false
 }
-let signaller = new RTCSignaller("localhost:8765");
+let signaller = new RTCSignaller(window.location.host);
 let localPeer;
 let remotePeer;
 

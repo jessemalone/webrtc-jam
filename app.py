@@ -30,7 +30,7 @@ async def dispatch(websocket, path):
            await unregister_offer_client(websocket)
     
 
-start_server = websockets.serve(dispatch, "localhost", 8765)
+start_server = websockets.serve(dispatch, "0.0.0.0", 8765)
 
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()
