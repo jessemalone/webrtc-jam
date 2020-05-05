@@ -11,8 +11,8 @@ export function createPeer() {
     // Local Peer Connection
     const config = {
         iceServers: [
-            {urls: ["stuns:stun1.l.google.com:19302"]},
-            {urls: ["stuns:stun2.l.google.com:19302"]}
+            {urls: ["stun:stun1.l.google.com:19302"]},
+            {urls: ["stun:stun2.l.google.com:19302"]}
         ]
     }
     let localPeerConnection = new RTCPeerConnection(config)
