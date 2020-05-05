@@ -130,7 +130,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"default\", function() { return RTCSignaller; });\n\n\nfunction RTCSignaller(websocketHost) {\n    this.offersSocket = new WebSocket(\"ws://\" + websocketHost + \"/ws/offer\");\n}\n\nRTCSignaller.prototype.sendOffer = function(offer) {\n    console.log(\"send offer\");\n    this.offersSocket.send(JSON.stringify(offer));\n}\n\nRTCSignaller.prototype.onOffer = function(callback) {\n    console.log(\"setting offer callback\");\n    this.offersSocket.onmessage = function(event) {\n        callback(JSON.parse(event.data));\n    }\n}\n\n\n\n\n//# sourceURL=webpack:///./src/js/signalling.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"default\", function() { return RTCSignaller; });\n\n\nfunction RTCSignaller(websocketHost) {\n    this.offersSocket = new WebSocket(\"wss://\" + websocketHost + \"/ws/offer\");\n}\n\nRTCSignaller.prototype.sendOffer = function(offer) {\n    console.log(\"send offer\");\n    this.offersSocket.send(JSON.stringify(offer));\n}\n\nRTCSignaller.prototype.onOffer = function(callback) {\n    console.log(\"setting offer callback\");\n    this.offersSocket.onmessage = function(event) {\n        callback(JSON.parse(event.data));\n    }\n}\n\n\n\n\n//# sourceURL=webpack:///./src/js/signalling.js?");
 
 /***/ })
 
