@@ -8,15 +8,11 @@ offer_clients = set()
 ice_clients = set()
 
 async def handle_offer(offer):
-    # print(offer)
-    # print(offer)
     if offer_clients:
         await asyncio.wait([client.send(offer) for client in offer_clients])
 
 
 async def handle_ice(ice):
-    # print(offer)
-    # print(offer)
     if offer_clients:
         await asyncio.wait([client.send(ice) for client in ice_clients])
 

@@ -17,23 +17,23 @@ const mediaStreamConstraints = {
 let offerSignaller = new RTCSignaller(window.location.host);
 let iceSignaller = new ICESignaller(window.location.host);
 let localPeer;
-let remotePeer;
-
 
 function handleLocalMediaStreamError(error) {
     console.log(error);
 }
+
 function gotLocalMediaStream(stream) {
     // Add Player
     let tracks = document.getElementById("tracks");
     let track = player.addPlayer(tracks, false);
     track.srcObject = stream;
+
     // Create peer connection
     localPeer = rtc.createPeer(function (event) {
         iceSignaller.sendIce(event);
     });
     localPeer.addStream(stream);
-    //
+
     // Create offer
     const offerOptions = {
         offerToReceiveAudio: 1,
@@ -62,15 +62,11 @@ function gotRemoteMediaStream(event) {
     remoteTrack.srcObject = event.stream;
 }
 
-
+// Handle remote offer
 offerSignaller.onOffer(function(offer) {
     console.log("GOT OFFER");
 
     // Create remote peer connection
-    //let remotePeer = rtc.createPeer();
-
-    window.localPeer = localPeer;
-    window.offer = offer;
     console.log(offer.type);
     if (offer.type === "answer") {
         var sdp_id = offer.sdp.match(/o=.*/)[0];
@@ -94,14 +90,10 @@ offerSignaller.onOffer(function(offer) {
             });
             localPeer.onaddstream = gotRemoteMediaStream
         }
-
     }
-
-
-    //remotePeer.addStream(stream);
-  
 });
 
+// Get local media stream
 navigator.mediaDevices.getUserMedia(mediaStreamConstraints)
     .then(gotLocalMediaStream).catch(handleLocalMediaStreamError);
 
