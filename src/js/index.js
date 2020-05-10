@@ -9,7 +9,8 @@ const mediaStreamConstraints = {
         autoGainContol: false,
         echoCancellation: false,
         latency: 0.05,
-        noiseSuppression: false
+        noiseSuppression: false,
+        channelCount: 1
     },
     video: false
 }
