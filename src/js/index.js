@@ -5,7 +5,12 @@ import * as rtc from './rtc'
 import {ICESignaller, RTCSignaller} from './signalling'
 
 const mediaStreamConstraints = {
-    audio: true,
+    audio: {
+        autoGainContol: false,
+        echoCancellation: true,
+        latency: 0.1,
+        noiseSuppression: false
+    },
     video: false
 }
 let offerSignaller = new RTCSignaller(window.location.host);
