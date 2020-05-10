@@ -25,7 +25,7 @@ function handleLocalMediaStreamError(error) {
 }
 function gotLocalMediaStream(stream) {
     // Add Player
-    tracks = document.getElementById("tracks");
+    let tracks = document.getElementById("tracks");
     let track = player.addPlayer(tracks);
     track.srcObject = stream;
     // Create peer connection
@@ -57,7 +57,7 @@ function gotRemoteMediaStream(event) {
         }
     });
     // Add player
-    tracks = document.getElementById("tracks");
+    let tracks = document.getElementById("tracks");
     let remoteTrack = player.addPlayer(tracks);
     remoteTrack.srcObject = event.stream;
 }
