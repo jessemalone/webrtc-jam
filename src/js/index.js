@@ -8,7 +8,7 @@ const mediaStreamConstraints = {
     audio: {
         autoGainContol: false,
         echoCancellation: false,
-        latency: 0.1,
+        latency: 0.05,
         noiseSuppression: false
     },
     video: false
