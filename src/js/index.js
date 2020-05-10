@@ -26,7 +26,7 @@ function handleLocalMediaStreamError(error) {
 function gotLocalMediaStream(stream) {
     // Add Player
     let tracks = document.getElementById("tracks");
-    let track = player.addPlayer(tracks);
+    let track = player.addPlayer(tracks, false);
     track.srcObject = stream;
     // Create peer connection
     localPeer = rtc.createPeer(function (event) {
