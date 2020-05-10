@@ -1,13 +1,19 @@
 {
+    "watch": {
+        "serve": "app.py"
+    },
     "scripts": {
         "js:build": "webpack src/js/index.js -o public/assets/js/bundle.js",
         "js:watch": "webpack -w src/js/index.js -o public/assets/js/bundle.js --mode=development",
         "build": "npm run js:build",
-        "watch": "npm run js:watch"
+        "watch": "npm run js:watch",
+        "serve": "docker run -v  /home/jesse/dev/webrtc/webrtc-jam:/app -p 8780:80 -it webrtc-jam"
     },
     "devDependencies": {
         "webpack": "^4.29.0",
         "webpack-cli": "^3.2.1"
     },
-    "dependencies": {}
+    "dependencies": {
+        "npm-watch": "^0.6.0"
+    }
 }

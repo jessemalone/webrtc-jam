@@ -2,13 +2,14 @@
 
 import * as player from './player'
 import * as rtc from './rtc'
-import RTCSignaller from './signalling'
+import {ICESignaller, RTCSignaller} from './signalling'
 
 const mediaStreamConstraints = {
     audio: true,
     video: false
 }
-let signaller = new RTCSignaller(window.location.host);
+let offerSignaller = new RTCSignaller(window.location.host);
+let iceSignaller = new ICESignaller(window.location.host);
 let localPeer;
 let remotePeer;
 
@@ -22,7 +23,9 @@ function gotLocalMediaStream(stream) {
     let track = player.addPlayer(tracks);
     track.srcObject = stream;
     // Create peer connection
-    localPeer = rtc.createPeer();
+    localPeer = rtc.createPeer(function (event) {
+        iceSignaller.sendIce(event);
+    });
     localPeer.addStream(stream);
     //
     // Create offer
@@ -32,13 +35,21 @@ function gotLocalMediaStream(stream) {
     localPeer.createOffer(offerOptions)
         .then(function(offer){
             localPeer.setLocalDescription(offer).then(()=>{}).catch(rtc.logError);
-        signaller.sendOffer(offer);
+        offerSignaller.sendOffer(offer);
         }).catch(rtc.logError);
 
 }
 
 function gotRemoteMediaStream(event) {
     console.log("got remote stream");
+    // Set up ICE handling
+    iceSignaller.onIce(function (ice) {
+        console.log("GOT REMOTE ICE");
+        if (ice  != null) {
+            var candidate = new RTCIceCandidate(ice);
+            localPeer.addIceCandidate(candidate);
+        }
+    });
     // Add player
     tracks = document.getElementById("tracks");
     let remoteTrack = player.addPlayer(tracks);
@@ -46,7 +57,7 @@ function gotRemoteMediaStream(event) {
 }
 
 
-signaller.onOffer(function(offer) {
+offerSignaller.onOffer(function(offer) {
     console.log("GOT OFFER");
 
     // Create remote peer connection
@@ -73,7 +84,7 @@ signaller.onOffer(function(offer) {
             localPeer.createAnswer().then(function(answer) {
                 console.log("sending answer");
                 localPeer.setLocalDescription(answer);
-                signaller.sendOffer(answer);
+                offerSignaller.sendOffer(answer);
             });
             localPeer.onaddstream = gotRemoteMediaStream
         }

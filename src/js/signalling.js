@@ -16,4 +16,21 @@ RTCSignaller.prototype.onOffer = function(callback) {
     }
 }
 
-export { RTCSignaller as default }
+function ICESignaller(websocketHost) {
+    this.iceSocket = new WebSocket("wss://" + websocketHost + "/ws/ice");
+}
+
+ICESignaller.prototype.sendIce = function(event) {
+    console.log("send ice");
+    console.log(this);
+    this.iceSocket.send(JSON.stringify(event.candidate));
+}
+
+ICESignaller.prototype.onIce = function(callback) {
+    console.log("setting ice callback");
+    this.iceSocket.onmessage = function(event) {
+        callback(JSON.parse(event.data));
+    }
+}
+
+export {RTCSignaller, ICESignaller}
