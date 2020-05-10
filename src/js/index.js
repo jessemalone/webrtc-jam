@@ -7,7 +7,7 @@ import {ICESignaller, RTCSignaller} from './signalling'
 const mediaStreamConstraints = {
     audio: {
         autoGainContol: false,
-        echoCancellation: true,
+        echoCancellation: false,
         latency: 0.1,
         noiseSuppression: false
     },
