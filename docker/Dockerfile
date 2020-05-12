@@ -214,10 +214,10 @@ RUN set -ex; \
 
 
 COPY . /app
-COPY ./nginx-site.conf /etc/nginx/conf.d/default.conf
+COPY ./docker/nginx-site.conf /etc/nginx/conf.d/default.conf
 RUN chmod -R 777 /app
-RUN /usr/local/bin/pip install -r /app/requirements.txt
-RUN /app/app.py >>/app/app.log &
+RUN /usr/local/bin/pip install -r /app/server/requirements.txt
+RUN /app/server/app.py >>/app/app.log &
 
-ENTRYPOINT ["/app/container-start.sh"]
+ENTRYPOINT ["/app/docker/pre-start.sh"]
 CMD ["/usr/local/bin/start-container", "nginx"]
