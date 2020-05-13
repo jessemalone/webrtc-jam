@@ -1,7 +1,11 @@
 'use strict'
 
 function RTCSignaller(websocketHost) {
-    this.offersSocket = new WebSocket("wss://" + websocketHost + "/ws/offer");
+    let proto = "wss://";
+    if (websocketHost == "localhost:8780") {
+        proto = "ws://"
+    }
+    this.offersSocket = new WebSocket(proto + websocketHost + "/ws/offer");
 }
 
 RTCSignaller.prototype.sendOffer = function(offer) {
@@ -17,7 +21,11 @@ RTCSignaller.prototype.onOffer = function(callback) {
 }
 
 function ICESignaller(websocketHost) {
-    this.iceSocket = new WebSocket("wss://" + websocketHost + "/ws/ice");
+    let proto = "wss://";
+    if (websocketHost == "localhost:8780") {
+        proto = "ws://"
+    }
+    this.iceSocket = new WebSocket(proto + websocketHost + "/ws/ice");
 }
 
 ICESignaller.prototype.sendIce = function(event) {
