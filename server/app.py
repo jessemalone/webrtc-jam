@@ -4,37 +4,23 @@ import asyncio
 import websockets
 import json
 
-offer_clients = set()
-ice_clients = set()
+from lib.message_handler import MessageHandler
+from lib.client import Client
 
-async def handle_offer(offer):
-    if offer_clients:
-        await asyncio.wait([client.send(offer) for client in offer_clients])
-
-
-async def handle_ice(ice):
-    if offer_clients:
-        await asyncio.wait([client.send(ice) for client in ice_clients])
+message_handler = MessageHandler()
 
 async def dispatch(websocket, path):
-   if (path == "/offer"):
-       offer_clients.add(websocket)
-       try:
-           async for json_message in websocket:
-               # TODO: handle parse error
-                offer = json.loads(json_message);
-                await handle_offer(json_message)
-       finally:
-           offer_clients.remove(websocket)
-   if (path == "/ice"):
-       ice_clients.add(websocket)
-       try:
-           async for json_message in websocket:
-               # TODO: handle parse error
-                ice = json.loads(json_message);
-                await handle_ice(json_message)
-       finally:
-           ice_clients.remove(websocket)
+    try:
+        client = Client(websocket)
+        async for json_message in websocket:
+            message = message.from_json(json_message)
+            if (message.type == "announce"):
+                message_handler.add_client(client)
+                message_handler.broadcast(client, message)
+            elif (message.type in ["offer","answer","ice"]):
+                message_handler.send(client, message)
+    finally:
+        message_handler.remove_client(client)
 
 start_server = websockets.serve(dispatch, "0.0.0.0", 8765)
 
