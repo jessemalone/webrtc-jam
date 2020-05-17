@@ -7,12 +7,24 @@
         "js:watch": "webpack -w src/js/index.js -o public/assets/js/bundle.js --mode=development",
         "build": "npm run js:build",
         "watch": "npm run js:watch",
-        "serve": "docker run -v  /home/jesse/dev/webrtc/webrtc-jam:/app -p 8780:80 -it webrtc-jam"
+        "serve": "docker run -v  /home/jesse/dev/webrtc/webrtc-jam:/app -p 8780:80 -it webrtc-jam",
+        "test": "jest"
+    },
+    "babel": {
+        "env": {
+            "test": {
+                "plugins": [
+                    "@babel/plugin-transform-modules-commonjs"
+                ]
+            }
+        }
     },
     "devDependencies": {
+        "@babel/plugin-transform-modules-commonjs": "^7.9.6",
+        "jest": "^26.0.1",
+        "npm-watch": "^0.6.0",
         "webpack": "^4.29.0",
-        "webpack-cli": "^3.2.1",
-        "npm-watch": "^0.6.0"
+        "webpack-cli": "^3.2.1"
     },
     "dependencies": {}
 }

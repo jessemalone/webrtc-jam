@@ -2,7 +2,7 @@
 
 import * as player from './player'
 import * as rtc from './rtc'
-import {ICESignaller, RTCSignaller} from './signalling'
+import {ICESignaller, RTCSignaller} from './signaller'
 
 const mediaStreamConstraints = {
     audio: {
