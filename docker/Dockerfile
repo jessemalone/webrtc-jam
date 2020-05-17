@@ -224,6 +224,7 @@ RUN /usr/local/bin/pip install -r /app/server/requirements.txt
 RUN cd /app/server/; ./run_tests.sh; cd ../..;
 
 RUN cd /app/; npm install; npm run test; cd ..;
+RUN cd /app/; npm run build; cd ..;
 
 RUN /app/server/app.py >>/app/app.log &
 
