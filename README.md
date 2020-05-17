@@ -1,3 +1,20 @@
+### Run the tests:
+
+##### Frontend:
+
+```
+npm install
+npm run test
+```
+
+#### Server:
+```
+pip3 install -r server/requirements.txt
+pushd server
+./run_tests.sh
+popd
+```
+
 ### Run in docker:
 
 ```

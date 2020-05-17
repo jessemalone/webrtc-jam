@@ -11,6 +11,9 @@ function Signaller(websocket) {
     this.websocket.onmessage = (event) => this.messageHandler(event);
 }
 
+// TODO: Consolodate send*() into send(type, messaga)
+// TODO: Consolodate set*Handler() into setHandler(type, handler)
+
 Signaller.prototype.messageHandler = function(event) {
     let data = JSON.parse(event.data)
     let message = new Message(data.type, data.data, data.recipient_guid)

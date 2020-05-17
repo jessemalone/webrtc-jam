@@ -212,11 +212,19 @@ RUN set -ex; \
 		\) -exec rm -rf '{}' +; \
 	rm -f get-pip.py
 
+RUN apt update -y; apt install -y npm
+RUN npm install -g n; n stable;
+RUN npm install -g latest-version
 
 COPY . /app
 COPY ./docker/nginx-site.conf /etc/nginx/conf.d/default.conf
 RUN chmod -R 777 /app
+
 RUN /usr/local/bin/pip install -r /app/server/requirements.txt
+RUN cd /app/server/; ./run_tests.sh; cd ../..;
+
+RUN cd /app/; npm install; npm run test; cd ..;
+
 RUN /app/server/app.py >>/app/app.log &
 
 ENTRYPOINT ["/app/docker/pre-start.sh"]
