@@ -1,4 +1,5 @@
 import uuid
+import json
 from lib.client import Client
 
 class MessageHandler:
@@ -16,9 +17,9 @@ class MessageHandler:
         message.sender_guid = sender.address
         for client in self.clients:
             if (client != sender):
-                await client.websocket.send(message)
+                await client.websocket.send(message.to_json())
 
     async def send(self, sender,  message):
         message.sender_guid = sender.address
         recipient = next(c for c in self.clients if c.address == message.receiver_guid)
-        await recipient.websocket.send(message)
+        await recipient.websocket.send(message.to_json())

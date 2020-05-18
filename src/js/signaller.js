@@ -30,6 +30,7 @@ Signaller.prototype.messageHandler = function(event) {
 }
 
 Signaller.prototype.announce = function() {
+    console.log("send announce!");
     let message = new Message("announce","announce","","");
     this.websocket.send(JSON.stringify(message));
 }

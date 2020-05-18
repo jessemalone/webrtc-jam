@@ -70,13 +70,14 @@ class MessageHandlerTests(unittest.TestCase):
         Receiver2MockWebSocket.send.assert_called()
 
         # It sent the right message
-        sent_data = Receiver1MockWebSocket.send.call_args[0][0].data
-        sent_type = Receiver1MockWebSocket.send.call_args[0][0].type
+        sent_message = Message.from_json(Receiver1MockWebSocket.send.call_args[0][0])
+        sent_data = sent_message.data
+        sent_type = sent_message.type
         self.assertEqual(sent_data, sample_message.data)
         self.assertEqual(sent_type, sample_message.type)
 
         # It set the "sender_guid"
-        sent_from = Receiver1MockWebSocket.send.call_args[0][0].sender_guid
+        sent_from = sent_message.sender_guid
         self.assertEqual(sent_from, sender.address)
         
 
@@ -104,11 +105,12 @@ class MessageHandlerTests(unittest.TestCase):
         ReceiverMockWebSocket.send.assert_called()
 
         # It sent the right message
-        sent_data = ReceiverMockWebSocket.send.call_args[0][0].data
-        sent_type = ReceiverMockWebSocket.send.call_args[0][0].type
+        sent_message = Message.from_json(ReceiverMockWebSocket.send.call_args[0][0])
+        sent_data = sent_message.data
+        sent_type = sent_message.type
         self.assertEqual(sent_data, sample_message.data)
         self.assertEqual(sent_type, sample_message.type)
 
         # It set the "sender_guid"
-        sent_from = ReceiverMockWebSocket.send.call_args[0][0].sender_guid
+        sent_from = sent_message.sender_guid
         self.assertEqual(sent_from, sender.address)
