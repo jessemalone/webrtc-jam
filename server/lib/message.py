@@ -3,14 +3,15 @@ import json
 class Message:
 
     def __init__(self, 
-                 obj_dict = {
-                     "from_client": "",
-                     "to_client": "",
-                     "message_type": "",
-                     "data": None}
+                     sender_guid = "",
+                     receiver_guid =  "",
+                     type = "",
+                     data = None
                  ):
-        for key in obj_dict:
-            setattr(self, key, obj_dict[key])
+        self.sender_guid = sender_guid
+        self.receiver_guid = receiver_guid
+        self.type = type
+        self.data = data
 
     def to_json(self):
         return json.dumps(self.__dict__)
@@ -18,6 +19,11 @@ class Message:
     @staticmethod
     def from_json(json_string):
         obj = json.loads(json_string)
-        return Message(obj)
+        return Message(
+                obj["sender_guid"],
+                obj["receiver_guid"],
+                obj["type"],
+                obj["data"]
+                )
 
 

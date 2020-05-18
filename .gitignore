@@ -3,4 +3,4 @@
 node_modules
 *.log
 **/__pycache__
-public/js/bundle.js
+public/assets/js/bundle.js

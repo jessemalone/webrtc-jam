@@ -13,12 +13,12 @@ class MessageHandler:
         self.clients.remove(client)
 
     async def broadcast(self, sender,  message):
-        message.from_client = sender.address
+        message.sender_guid = sender.address
         for client in self.clients:
             if (client != sender):
                 await client.websocket.send(message)
 
     async def send(self, sender,  message):
-        message.from_client = sender.address
-        recipient = next(c for c in self.clients if c.address == message.to_client)
+        message.sender_guid = sender.address
+        recipient = next(c for c in self.clients if c.address == message.receiver_guid)
         await recipient.websocket.send(message)

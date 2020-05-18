@@ -58,10 +58,10 @@ class MessageHandlerTests(unittest.TestCase):
         self.assertTrue(len(message_handler.clients) == 3)
 
         # It sends a message to each client
-        sample_message = Message({
-                "type": "announce",
-                "data": "data"
-                })
+        sample_message = Message(
+                type = "announce",
+                data= "data"
+                )
         asyncio.get_event_loop().run_until_complete(
                 message_handler.broadcast(sender, sample_message)
         )
@@ -75,8 +75,8 @@ class MessageHandlerTests(unittest.TestCase):
         self.assertEqual(sent_data, sample_message.data)
         self.assertEqual(sent_type, sample_message.type)
 
-        # It set the "from_client"
-        sent_from = Receiver1MockWebSocket.send.call_args[0][0].from_client
+        # It set the "sender_guid"
+        sent_from = Receiver1MockWebSocket.send.call_args[0][0].sender_guid
         self.assertEqual(sent_from, sender.address)
         
 
@@ -92,11 +92,11 @@ class MessageHandlerTests(unittest.TestCase):
         self.assertTrue(len(message_handler.clients) == 2)
 
         # It sends a message to receiver
-        sample_message = Message({
-                "to_client": receiver.address,
-                "type": "announce",
-                "data": "data"
-                })
+        sample_message = Message(
+                receiver_guid = receiver.address,
+                type = "announce",
+                data = "data"
+                )
         asyncio.get_event_loop().run_until_complete(
                 message_handler.send(sender, sample_message)
         )
@@ -109,6 +109,6 @@ class MessageHandlerTests(unittest.TestCase):
         self.assertEqual(sent_data, sample_message.data)
         self.assertEqual(sent_type, sample_message.type)
 
-        # It set the "from_client"
-        sent_from = ReceiverMockWebSocket.send.call_args[0][0].from_client
+        # It set the "sender_guid"
+        sent_from = ReceiverMockWebSocket.send.call_args[0][0].sender_guid
         self.assertEqual(sent_from, sender.address)
