@@ -1,10 +1,10 @@
 'use strict'
 
-function Message(type,data,sender_guid, receiver_guid) {
+function Message(type,data,senderGuid, receiverGuid) {
     this.type = type;
     this.data = data;
-    this.sender_guid = sender_guid
-    this.receiver_guid = receiver_guid;
+    this.senderGuid = senderGuid
+    this.receiverGuid = receiverGuid;
 }
 
 export {Message}
