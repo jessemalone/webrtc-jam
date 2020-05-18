@@ -13,7 +13,7 @@ function Signaller(websocket) {
 
 Signaller.prototype.messageHandler = function(event) {
     let data = JSON.parse(event.data)
-    let message = new Message(data.type, data.data, data.senderGuid, data.receiverGuid)
+    let message = new Message(data.type, data.data, data.sender_guid, data.receiver_guid)
     switch (message.type) {
         case 'offer':
             this.offerHandler(message);
