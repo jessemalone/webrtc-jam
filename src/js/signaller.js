@@ -8,6 +8,7 @@ function Signaller(websocket) {
     this.answerHandler = function(){};
     this.announceHandler = function(){};
     this.iceHandler = function(){};
+    this.hangupHandler = function(){};
     this.websocket.onmessage = (event) => this.messageHandler(event);
 }
 
@@ -26,6 +27,10 @@ Signaller.prototype.messageHandler = function(event) {
             break;
         case 'ice':
             this.iceHandler(message);
+            break;
+        case 'hangup':
+            this.hangupHandler(message);
+            break;
     }
 }
 
@@ -48,6 +53,9 @@ Signaller.prototype.setHandler = function(type, handler) {
             break;
         case "ice":
             this.iceHandler = handler;
+            break;
+        case "hangup":
+            this.hangupHandler = handler;
             break;
     }
 }

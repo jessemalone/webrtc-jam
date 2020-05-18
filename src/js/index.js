@@ -25,6 +25,7 @@ if (window.location.host == "localhost:8780") {
 let websocket = new WebSocket(proto + window.location.host + "/ws");
 let signaller = new Signaller(websocket);
 let peerConnections = [];
+let remoteTracks = [];
 let localStream;
 
 // TODO: this is our sender_guid for outgoing messages but isn't
@@ -44,12 +45,15 @@ function gotLocalMediaStream(stream) {
     signaller.announce();
 }
 
-function gotRemoteMediaStream(event) {
-    console.log("got remote stream");
-    // Add player
-    let tracks_container = document.getElementById("tracks");
-    let remoteTrack = player.addPlayer(tracks);
-    remoteTrack.srcObject = event.stream;
+function createRemoteMediaStreamHandlerFor(peerId){
+    return function(event) {
+        console.log("got remote stream");
+        // Add player
+        let tracks_container = document.getElementById("tracks");
+        let remoteTrack = player.addPlayer(tracks);
+        remoteTrack.srcObject = event.stream;
+        remoteTracks.push({"peerId": peerId, "track": remoteTrack});
+        };
 }
 function handleLocalMediaStreamError(error) {
     console.log(error);
@@ -78,7 +82,7 @@ function offerHandler(message) {
     });
     
     // Set up remote stream handler
-    newPeerConnection.onaddstream = gotRemoteMediaStream;
+    newPeerConnection.onaddstream = createRemoteMediaStreamHandlerFor(message.sender_guid);
 
     // Add the local stream
     newPeerConnection.addStream(localStream);
@@ -100,7 +104,7 @@ function answerHandler(message) {
 
     // Set up the peer
     peer.connection.setRemoteDescription(message.data);
-    peer.connection.onaddstream = gotRemoteMediaStream
+    peer.connection.onaddstream = createRemoteMediaStreamHandlerFor(message.sender_guid);
 }
 signaller.setHandler("answer", answerHandler);
 
@@ -149,6 +153,21 @@ function iceHandler(message) {
 }
 signaller.setHandler("ice", iceHandler);
 
+// Listen for peer hangups
+// 
+function hangupHandler(message) {
+    console.log("GOT HANGUP");
+    let peerId = message.sender_guid;
+
+    // Remove the player for this stream
+    let trackToRemove = remoteTracks.find( track => track.peerId == peerId);
+    trackToRemove.track.parentNode.remove();
+    
+    // Remove the peer connection
+    let peerIndex = peerConnections.findIndex( peer => peer.id == peerId);
+    peerConnections.splice(peerIndex, 1);
+}
+signaller.setHandler("hangup", hangupHandler);
 
 
 // Get local media stream
