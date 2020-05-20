@@ -69,8 +69,14 @@ function offerHandler(message) {
 
     // Create peer connection
     let newPeerConnection = rtc.createPeer(function(event) {
+        console.log("offer sending ICE");
         signaller.send(new Message("ice",event.candidate,localClientGuid,message.sender_guid));
     });
+ 
+    // Add the local stream
+    // (This needs to be added before creating and sending answer)
+    // TODO: Replace with addTrack - addStream is deprecated
+    newPeerConnection.addStream(localStream);
 
 
     // set the offer and answer handler
@@ -84,9 +90,6 @@ function offerHandler(message) {
     // Set up remote stream handler
     newPeerConnection.onaddstream = createRemoteMediaStreamHandlerFor(message.sender_guid);
 
-    // Add the local stream
-    newPeerConnection.addStream(localStream);
-    
     // Add to the peer list
     let newPeer = new Peer(message.sender_guid, newPeerConnection);
     peerConnections.push(newPeer);
@@ -112,8 +115,10 @@ signaller.setHandler("answer", answerHandler);
 // Listen for announcements
 //
 function announceHandler(message) {
+    console.log("GOT ANNOUNCE");
     // Create peer connection
     let newPeerConnection = rtc.createPeer(function(event) {
+        console.log("announce sending ICE");
         signaller.send(new Message("ice",event.candidate,localClientGuid,message.sender_guid))
     });
 
