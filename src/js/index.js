@@ -9,7 +9,7 @@ import {Peer} from './peer'
 const mediaStreamConstraints = {
     audio: {
         autoGainContol: false,
-        echoCancellation: false,
+        echoCancellation: true,
         latency: 0.05,
         noiseSuppression: false,
         channelCount: 1
@@ -171,7 +171,9 @@ signaller.setHandler("hangup", hangupHandler);
 
 
 // Get local media stream
-navigator.mediaDevices.getUserMedia(mediaStreamConstraints)
-    .then(gotLocalMediaStream).catch(handleLocalMediaStreamError);
+websocket.onopen = function() {
+    navigator.mediaDevices.getUserMedia(mediaStreamConstraints)
+        .then(gotLocalMediaStream).catch(handleLocalMediaStreamError);
+};
 
 
