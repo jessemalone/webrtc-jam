@@ -35,10 +35,13 @@ let localClientGuid = "";
 
 // Set up media stream handlers
 function gotLocalMediaStream(stream) {
+    console.log("MEDIA STREAM");
+    console.log(stream.getTracks());
     // Add Player
     let tracks_container = document.getElementById("tracks");
     let track = player.addPlayer(tracks_container, false);
-    track.srcObject = stream;
+    let audio = track.querySelector('audio');
+    audio.srcObject = stream;
     localStream = stream;
 
     // Announce!
@@ -51,7 +54,8 @@ function createRemoteMediaStreamHandlerFor(peerId){
         // Add player
         let tracks_container = document.getElementById("tracks");
         let remoteTrack = player.addPlayer(tracks);
-        remoteTrack.srcObject = event.stream;
+        let audio = remoteTrack.querySelector('audio')
+        audio.srcObject = event.stream;
         remoteTracks.push({"peerId": peerId, "track": remoteTrack});
         };
 }
@@ -166,7 +170,7 @@ function hangupHandler(message) {
 
     // Remove the player for this stream
     let trackToRemove = remoteTracks.find( track => track.peerId == peerId);
-    trackToRemove.track.parentNode.remove();
+    trackToRemove.track.remove();
     
     // Remove the peer connection
     let peerIndex = peerConnections.findIndex( peer => peer.id == peerId);
@@ -182,3 +186,20 @@ websocket.onopen = function() {
 };
 
 
+// Set up stats
+setInterval(function() {
+    let stats = "";
+    for (var i in peerConnections) {
+        // find the audio track
+        var peer = peerConnections[i];
+        var remoteTrack = remoteTracks.find( track => track.peerId == peer.id);
+        peer.connection.getStats().then(function(report){
+            report.forEach(function(entry) {
+                if (entry.roundTripTime != null) {
+                    var latencyElement = remoteTrack.track.querySelector('#latency');
+                    latencyElement.innerHTML = entry.roundTripTime;
+                }
+            });
+        }); 
+    }
+}, 1000);
