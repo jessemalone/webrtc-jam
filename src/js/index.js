@@ -179,7 +179,6 @@ function iceHandler(message) {
 // 
 function hangupHandler(message) {
     console.log("GOT HANGUP");
-    clearInterval(statsReportingInterval);
     let peerId = message.sender_guid;
 
     // Remove the player for this stream
@@ -191,32 +190,28 @@ function hangupHandler(message) {
     let peerIndex = peerConnections.findIndex( peer => peer.id == peerId);
     peerConnections[peerIndex].connection.close();
     peerConnections.splice(peerIndex, 1);
-    startStatsReporting();
 }
 
 // Reset Connections
 function resetConnections() {
     console.log("RESET");
     // Stop stats reporting
-    clearInterval(statsReportingInterval);
     websocket.onclose = function() {
         // Remove peerConnections
         for (var i in peerConnections) {
             peerConnections[i].connection.close();
-            peerConnections.splice(i,1);
         }
+        peerConnections = [];
 
         // Remove tracks
         for (var i in remoteTracks) {
-            console.log("remove track " + i);
             remoteTracks[i].track.remove();
-            remoteTracks.splice(i,1);
         }
+        remoteTracks = [];
         
         startWebsocket();
         websocket.onopen = function() {
             signaller.announce();
-            startStatsReporting();
         }
     };
     signaller = null;
@@ -225,21 +220,24 @@ function resetConnections() {
 
 
 // Set up stats
+function createStatsHandlerForPeer(peer) {
+    return function(report) {
+        var remoteTrack = remoteTracks.find( track => track.peerId == peer.id);
+        var latencyElement = remoteTrack.track.querySelector('#latency');
+        report.forEach(function(entry) {
+            if (entry.roundTripTime != null) {
+                latencyElement.innerHTML = entry.roundTripTime;
+            }
+        });
+    }
+}
 function startStatsReporting() {
     statsReportingInterval = setInterval(function() {
         let stats = "";
         for (var i in peerConnections) {
             // find the audio track
             var peer = peerConnections[i];
-            var remoteTrack = remoteTracks.find( track => track.peerId == peer.id);
-            peer.connection.getStats().then(function(report){
-                report.forEach(function(entry) {
-                    if (entry.roundTripTime != null) {
-                        var latencyElement = remoteTrack.track.querySelector('#latency');
-                        latencyElement.innerHTML = entry.roundTripTime;
-                    }
-                });
-            }); 
+            peer.connection.getStats().then(createStatsHandlerForPeer(peer));
         }
     }, 1000);
 }
@@ -277,9 +275,9 @@ document.querySelectorAll('select').forEach(function(element) {
 // ==================================================================//  
 // ** START **
 startWebsocket();
+startStatsReporting();
 websocket.onopen = function() {
     navigator.mediaDevices.getUserMedia(mediaStreamConstraints)
         .then(gotLocalMediaStream).catch(handleLocalMediaStreamError);
-    startStatsReporting();
 };
 
