@@ -5,33 +5,51 @@ import * as rtc from './rtc'
 import {Signaller} from './signaller'
 import {Message} from './message'
 import {Peer} from './peer'
+import {SdpParams} from './sdp_params'
 
 const mediaStreamConstraints = {
     audio: {
         autoGainContol: false,
-        echoCancellation: true,
-        latency: 0.05,
+        echoCancellation: false,
+        latency: 0.005,
         noiseSuppression: false,
         channelCount: 1
     },
     video: false
 }
+const offerOptions = {
+    offerToReceiveAudio: 1,
+}
+
 
 // Set up globals
 let proto = "wss://";
-if (window.location.host == "localhost:8780") {
-    proto = "ws://"
-}
-let websocket = new WebSocket(proto + window.location.host + "/ws");
-let signaller = new Signaller(websocket);
+let signaller;
+let websocket;
+let sdpParams = new SdpParams();
 let peerConnections = [];
 let remoteTracks = [];
 let localStream;
+let statsReportingInterval;
 
 // TODO: this is our sender_guid for outgoing messages but isn't
 //       really necessary. 
 let localClientGuid = "";
 
+
+function startWebsocket() {
+    if (window.location.host == "localhost:8780") {
+        proto = "ws://"
+    }
+    websocket = new WebSocket(proto + window.location.host + "/ws");
+    signaller = new Signaller(websocket);
+    
+    signaller.setHandler("answer", answerHandler);
+    signaller.setHandler("offer", offerHandler);
+    signaller.setHandler("announce", announceHandler);
+    signaller.setHandler("ice", iceHandler);
+    signaller.setHandler("hangup", hangupHandler);
+}
 
 // Set up media stream handlers
 function gotLocalMediaStream(stream) {
@@ -53,7 +71,7 @@ function createRemoteMediaStreamHandlerFor(peerId){
         console.log("got remote stream");
         // Add player
         let tracks_container = document.getElementById("tracks");
-        let remoteTrack = player.addPlayer(tracks);
+        let remoteTrack = player.addPlayer(tracks_container);
         let audio = remoteTrack.querySelector('audio')
         audio.srcObject = event.stream;
         remoteTracks.push({"peerId": peerId, "track": remoteTrack});
@@ -88,6 +106,7 @@ function offerHandler(message) {
     newPeerConnection.createAnswer().then(function(answer) {
         console.log("sending answer");
         newPeerConnection.setLocalDescription(answer);
+        answer =rtc.mungeSDP(answer, sdpParams);
         signaller.send(new Message("answer",answer,localClientGuid,message.sender_guid));
     });
     
@@ -99,12 +118,12 @@ function offerHandler(message) {
     peerConnections.push(newPeer);
 }
 
-signaller.setHandler("offer", offerHandler);
 
 // Listen for answers
 function answerHandler(message) {
     console.log("GOT ANSWER");
     let answer = message.data;
+    console.log(answer);
 
     // Find the right peer
     let peer = peerConnections.find( peer => peer.id == message.sender_guid);
@@ -113,7 +132,6 @@ function answerHandler(message) {
     peer.connection.setRemoteDescription(message.data);
     peer.connection.onaddstream = createRemoteMediaStreamHandlerFor(message.sender_guid);
 }
-signaller.setHandler("answer", answerHandler);
 
 
 // Listen for announcements
@@ -130,13 +148,10 @@ function announceHandler(message) {
     newPeerConnection.addStream(localStream);
 
     // Create offer
-    const offerOptions = {
-        offerToReceiveAudio: 1,
-    }
-
     newPeerConnection.createOffer(offerOptions)
         .then(function(offer){
             newPeerConnection.setLocalDescription(offer).then(()=>{}).catch(rtc.logError);
+            offer =rtc.mungeSDP(offer, sdpParams);
             signaller.send(new Message("offer",offer,localClientGuid,message.sender_guid));
         }).catch(rtc.logError);
 
@@ -144,7 +159,6 @@ function announceHandler(message) {
     let newPeer = new Peer(message.sender_guid, newPeerConnection);
     peerConnections.push(newPeer);
 }
-signaller.setHandler("announce", announceHandler);
 
 // Listen for remote ICE
 //
@@ -160,46 +174,112 @@ function iceHandler(message) {
         peer.connection.addIceCandidate(rtcIceCandidate);
     }
 }
-signaller.setHandler("ice", iceHandler);
 
 // Listen for peer hangups
 // 
 function hangupHandler(message) {
     console.log("GOT HANGUP");
+    clearInterval(statsReportingInterval);
     let peerId = message.sender_guid;
 
     // Remove the player for this stream
-    let trackToRemove = remoteTracks.find( track => track.peerId == peerId);
-    trackToRemove.track.remove();
+    let trackIndex = remoteTracks.findIndex( track => track.peerId == peerId);
+    remoteTracks[trackIndex].track.remove();
+    remoteTracks.splice(trackIndex, 1);
     
     // Remove the peer connection
     let peerIndex = peerConnections.findIndex( peer => peer.id == peerId);
+    peerConnections[peerIndex].connection.close();
     peerConnections.splice(peerIndex, 1);
+    startStatsReporting();
 }
-signaller.setHandler("hangup", hangupHandler);
 
+// Reset Connections
+function resetConnections() {
+    console.log("RESET");
+    // Stop stats reporting
+    clearInterval(statsReportingInterval);
+    websocket.onclose = function() {
+        // Remove peerConnections
+        for (var i in peerConnections) {
+            peerConnections[i].connection.close();
+            peerConnections.splice(i,1);
+        }
 
-// Get local media stream
-websocket.onopen = function() {
-    navigator.mediaDevices.getUserMedia(mediaStreamConstraints)
-        .then(gotLocalMediaStream).catch(handleLocalMediaStreamError);
-};
+        // Remove tracks
+        for (var i in remoteTracks) {
+            console.log("remove track " + i);
+            remoteTracks[i].track.remove();
+            remoteTracks.splice(i,1);
+        }
+        
+        startWebsocket();
+        websocket.onopen = function() {
+            signaller.announce();
+            startStatsReporting();
+        }
+    };
+    signaller = null;
+    websocket.close("1000", "Connection reset requested");
+}
 
 
 // Set up stats
-setInterval(function() {
-    let stats = "";
-    for (var i in peerConnections) {
-        // find the audio track
-        var peer = peerConnections[i];
-        var remoteTrack = remoteTracks.find( track => track.peerId == peer.id);
-        peer.connection.getStats().then(function(report){
-            report.forEach(function(entry) {
-                if (entry.roundTripTime != null) {
-                    var latencyElement = remoteTrack.track.querySelector('#latency');
-                    latencyElement.innerHTML = entry.roundTripTime;
-                }
-            });
-        }); 
+function startStatsReporting() {
+    statsReportingInterval = setInterval(function() {
+        let stats = "";
+        for (var i in peerConnections) {
+            // find the audio track
+            var peer = peerConnections[i];
+            var remoteTrack = remoteTracks.find( track => track.peerId == peer.id);
+            peer.connection.getStats().then(function(report){
+                report.forEach(function(entry) {
+                    if (entry.roundTripTime != null) {
+                        var latencyElement = remoteTrack.track.querySelector('#latency');
+                        latencyElement.innerHTML = entry.roundTripTime;
+                    }
+                });
+            }); 
+        }
+    }, 1000);
+}
+
+// Set up codec params listener
+function setCodecParams(event) {
+    console.log("UPDATE SDP PARAMS");
+    switch(event.target.id) {
+        case 'rate':
+            sdpParams.rate = event.target.value;
+            break;
+        case 'maxptime':
+            sdpParams.maxptime = event.target.value;
+            break;
+        case 'ptime':
+            sdpParams.ptime = event.target.value;
+            break;
+        case 'maxaveragebitrate':
+            sdpParams.maxaveragebitrate = event.target.value;
+            break;
+        case 'stereo':
+            sdpParams.stereo = event.target.value;
+            break;
     }
-}, 1000);
+    console.log(sdpParams);
+    resetConnections();
+};
+
+// Handle codec parameter selection
+document.querySelectorAll('select').forEach(function(element) {
+    element.onchange = setCodecParams;
+});
+    
+    
+// ==================================================================//  
+// ** START **
+startWebsocket();
+websocket.onopen = function() {
+    navigator.mediaDevices.getUserMedia(mediaStreamConstraints)
+        .then(gotLocalMediaStream).catch(handleLocalMediaStreamError);
+    startStatsReporting();
+};
+

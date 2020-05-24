@@ -4,6 +4,67 @@
     </head>
     <body>
         <div id="tracks"></div>
+        <div id="codec-params">
+            <h2>Codec Parameters</h2>
+            <ul>
+                <li>
+                    <label>Sample Rate (Hz)</label>
+                    <select id="rate" autocomplete="off">
+                        <option value="">default</option>
+                        <option>48000</option> 
+                        <option>24000</option> 
+                        <option>16000</option> 
+                    </select>
+                </li>
+                <li>
+                    <label>Max Frame Size (ms)</label>
+                    <select id="maxptime" autocomplete="off">
+                        <option value="">default</option>
+                        <option>120</option> 
+                        <option>60</option> 
+                        <option>40</option> 
+                        <option>20</option> 
+                        <option>10</option> 
+                        <option>5</option> 
+                        <option>3</option> 
+                    </select>
+                </li>
+                <li>
+                    <label>Target Frame Size (ms)</label>
+                    <select id="ptime" autocomplete="off">
+                        <option value="">default</option>
+                        <option>120</option> 
+                        <option>60</option> 
+                        <option>40</option> 
+                        <option>20</option> 
+                        <option>10</option> 
+                        <option>5</option> 
+                        <option>3</option> 
+                    </select>
+                </li>
+                <li>
+                    <label>Max Average Bit Rate (bits/s)</label>
+                    <select id="maxaveragebitrate" autocomplete="off">
+                        <option value="">default</option>
+                        <option>64000</option> 
+                        <option>48000</option> 
+                        <option>32000</option> 
+                        <option>24000</option> 
+                        <option>16000</option> 
+                        <option>8000</option> 
+                        <option>128000</option> 
+                    </select>
+                </li>
+                <li>
+                    <label>Stereo (true/false)</label>
+                    <select id="stereo" autocomplete="off">
+                        <option value="">default</option>
+                        <option value="0">false</option> 
+                        <option value="1">true</option> 
+                    </select>
+                </li>
+            </ul
+        </div>
     </body>
 
 
