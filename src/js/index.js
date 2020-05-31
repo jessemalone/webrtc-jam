@@ -11,7 +11,7 @@ const mediaStreamConstraints = {
     audio: {
         autoGainContol: false,
         echoCancellation: false,
-        latency: 0.005,
+        latency: 0.005, // This is only supported by chrome
         noiseSuppression: false,
         channelCount: 1
     },
@@ -31,6 +31,7 @@ let peerConnections = [];
 let remoteTracks = [];
 let localStream;
 let statsReportingInterval;
+let audioCtx = new AudioContext({"latencyHint": 0.001});
 
 // TODO: this is our sender_guid for outgoing messages but isn't
 //       really necessary. 
@@ -58,8 +59,7 @@ function gotLocalMediaStream(stream) {
     // Add Player
     let tracks_container = document.getElementById("tracks");
     let track = player.addPlayer(tracks_container, false);
-    let audio = track.querySelector('audio');
-    audio.srcObject = stream;
+    //let audio = track.querySelector('audio');
     localStream = stream;
 
     // Announce!
@@ -72,8 +72,13 @@ function createRemoteMediaStreamHandlerFor(peerId){
         // Add player
         let tracks_container = document.getElementById("tracks");
         let remoteTrack = player.addPlayer(tracks_container);
-        let audio = remoteTrack.querySelector('audio')
-        audio.srcObject = event.stream;
+        //let audio = remoteTrack.querySelector('audio')
+        //audio.srcObject = event.stream;
+        let audioSource = audioCtx.createMediaStreamSource(event.stream);
+        audioSource.connect(audioCtx.destination);
+        new Audio().srcObject = event.stream; // workaround for https://bugs.chromium.org/p/chromium/issues/detail?id=933677
+        audioCtx.resume();
+
         remoteTracks.push({"peerId": peerId, "track": remoteTrack});
         };
 }
