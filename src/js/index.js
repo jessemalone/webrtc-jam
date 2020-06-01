@@ -261,6 +261,9 @@ function setCodecParams(event) {
         case 'stereo':
             sdpParams.stereo = event.target.value;
             break;
+        case 'useinbandfec':
+            sdpParams.useinbandfec = event.target.value;
+            break;
     }
     console.log(sdpParams);
     resetConnections();

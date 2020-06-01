@@ -6,6 +6,7 @@ function SdpParams() {
     this.ptime = "";
     this.maxaveragebitrate = "";
     this.stereo = "";
+    this.useinbandfec = "";
 }
 
 export {SdpParams}

@@ -36,6 +36,11 @@ export function mungeSDP(offer, sdpParams) {
     if (sdpParams.maxaveragebitrate != "") {
         offer.sdp = offer.sdp.replace("useinbandfec=1","maxaveragebitrate=" + sdpParams.maxaveragebitrate + ";useinbandfec=1");
     }
+    if (sdpParams.useinbandfec != "") {
+        console.log("MUNGE USEINBANDFEC");
+        console.log(sdpParams);
+        offer.sdp = offer.sdp.replace(/useinbandfec=\d/,"useinbandfec=" +  sdpParams.useinbandfec);
+    }
     console.log(offer.sdp);
     return offer;
 }
