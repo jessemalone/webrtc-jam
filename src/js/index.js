@@ -74,9 +74,9 @@ function createRemoteMediaStreamHandlerFor(peerId){
         let remoteTrack = player.addPlayer(tracks_container);
         //let audio = remoteTrack.querySelector('audio')
         //audio.srcObject = event.stream;
-        let audioSource = audioCtx.createMediaStreamSource(event.stream);
+        let audioSource = audioCtx.createMediaStreamSource(event.streams[0]);
         audioSource.connect(audioCtx.destination);
-        new Audio().srcObject = event.stream; // workaround for https://bugs.chromium.org/p/chromium/issues/detail?id=933677
+        new Audio().srcObject = event.streams[0]; // workaround for https://bugs.chromium.org/p/chromium/issues/detail?id=933677
         audioCtx.resume();
 
         remoteTracks.push({"peerId": peerId, "track": remoteTrack});
@@ -103,7 +103,12 @@ function offerHandler(message) {
     // Add the local stream
     // (This needs to be added before creating and sending answer)
     // TODO: Replace with addTrack - addStream is deprecated
-    newPeerConnection.addStream(localStream);
+    //newPeerConnection.addStream(localStream);
+    for (const track of localStream.getTracks()) {
+        console.log("DEBUG: add track for offer");
+        newPeerConnection.addTrack(track, localStream);
+    }
+        
 
 
     // set the offer and answer handler
@@ -116,7 +121,7 @@ function offerHandler(message) {
     });
     
     // Set up remote stream handler
-    newPeerConnection.onaddstream = createRemoteMediaStreamHandlerFor(message.sender_guid);
+    newPeerConnection.ontrack = createRemoteMediaStreamHandlerFor(message.sender_guid);
 
     // Add to the peer list
     let newPeer = new Peer(message.sender_guid, newPeerConnection);
@@ -135,7 +140,7 @@ function answerHandler(message) {
 
     // Set up the peer
     peer.connection.setRemoteDescription(message.data);
-    peer.connection.onaddstream = createRemoteMediaStreamHandlerFor(message.sender_guid);
+    peer.connection.ontrack = createRemoteMediaStreamHandlerFor(message.sender_guid);
 }
 
 
@@ -150,7 +155,11 @@ function announceHandler(message) {
     });
 
     // Add local stream to the connection
-    newPeerConnection.addStream(localStream);
+    //newPeerConnection.addStream(localStream);
+    for (const track of localStream.getTracks()) {
+        console.log("DEBUG: add track for announce");
+        newPeerConnection.addTrack(track, localStream);
+    }
 
     // Create offer
     newPeerConnection.createOffer(offerOptions)
@@ -228,12 +237,14 @@ function resetConnections() {
 function createStatsHandlerForPeer(peer) {
     return function(report) {
         var remoteTrack = remoteTracks.find( track => track.peerId == peer.id);
-        var latencyElement = remoteTrack.track.querySelector('#latency');
-        report.forEach(function(entry) {
-            if (entry.roundTripTime != null) {
-                latencyElement.innerHTML = entry.roundTripTime;
-            }
-        });
+        if (remoteTrack != undefined) {
+            var latencyElement = remoteTrack.track.querySelector('#latency');
+            report.forEach(function(entry) {
+                if (entry.roundTripTime != null) {
+                    latencyElement.innerHTML = entry.roundTripTime;
+                }
+            });
+        }
     }
 }
 function startStatsReporting() {
