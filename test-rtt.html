@@ -1,0 +1,100 @@
+<html>
+
+    <body>
+        <audio controls id="player">
+        <script>
+            
+const mediaStreamConstraints = {
+    audio: {
+        autoGainContol: false,
+        echoCancellation: false,
+        latency: 0.001, // This is only supported by chrome
+        noiseSuppression: false,
+        channelCount: 1
+    },
+    video: false
+}
+
+function getVolume(analyser) {
+    let bufferLength = analyser.frequencyBinCount;
+    let dataArray = new Uint8Array(bufferLength);
+    analyser.getByteTimeDomainData(dataArray);
+    return dataArray.reduce((a,b) => a + b, 0) / dataArray.length
+}
+
+async function detectPeaks(analyser, ctx, name) {
+    while (1)  {
+        vol = Math.abs(128 - getVolume(analyser));
+        if (vol > 0) {
+            console.log(name);
+            console.log(ctx.currentTime);
+            return
+        }
+        await new Promise(r => setTimeout(r, 1));
+    }
+}
+
+function gotLocalMediaStream(stream) {
+    player = document.getElementById('player');
+    player.srcObject = stream;
+
+    let localCtx = new AudioContext({"latencyHint": 0.01});
+    let remoteCtx = new AudioContext({"latencyHint": 0.01});
+
+    localOutput = localCtx.createMediaStreamDestination();
+    remoteInput = remoteCtx.createMediaStreamSource(localOutput.stream);
+    let startAnalyser = localCtx.createAnalyser();
+    let endAnalyser = localCtx.createAnalyser();
+    startAnalyser.fftSize = 512;
+    endAnalyser.fftSize = 512;
+
+    remoteDelay = remoteCtx.createDelay(5.0);
+    remoteDelay.delayTime.setValueAtTime(0.01, remoteCtx.currentTime);
+
+    remoteOutput = remoteCtx.createMediaStreamDestination();
+    localInput = localCtx.createMediaStreamSource(remoteOutput.stream);
+    remoteDelay.connect(remoteOutput);
+    remoteInput.connect(remoteDelay);
+
+    localInput.connect(localCtx.destination);
+    remoteDelay.connect(remoteCtx.destination);
+
+
+    // Set up peak detection
+
+    detectPeaks(startAnalyser, localCtx, "start");
+    detectPeaks(endAnalyser, localCtx, "end");
+
+    // Use an oscillator on localCtx to produce a ping
+    osc = localCtx.createOscillator();
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(440,localCtx.currentTime);
+    //osc.connect(localCtx.destination);
+    osc.connect(localOutput);
+    osc.connect(startAnalyser);
+    localInput.connect(endAnalyser);
+    osc.start();
+    //osc.stop(localCtx.currentTime + 0.050);
+    osc.stop(localCtx.currentTime + 0.02);
+
+
+    // Grab the clock time A from localCtx
+
+
+    // Report clock time B - A
+
+
+    //source = ctx.createMediaStreamSource(stream);
+     //   new Audio().srcObject = stream;
+    //dest = ctx.createMediaStreamDestination();
+    //source.connect(ctx.destination);
+    //source.connect(dest);
+
+}
+
+    navigator.mediaDevices.getUserMedia(mediaStreamConstraints)
+        .then(gotLocalMediaStream);
+
+        </script>
+    </body>
+</html>
