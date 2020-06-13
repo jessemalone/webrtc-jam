@@ -9,6 +9,8 @@ function Signaller(websocket) {
     this.announceHandler = function(){};
     this.iceHandler = function(){};
     this.hangupHandler = function(){};
+    this.echoStartHandler = function(){};
+    this.echoReadyHandler = function(){};
     this.websocket.onmessage = (event) => this.messageHandler(event);
 }
 
@@ -30,6 +32,12 @@ Signaller.prototype.messageHandler = function(event) {
             break;
         case 'hangup':
             this.hangupHandler(message);
+            break;
+        case 'echo_start':
+            this.echoStartHandler(message);
+            break;
+        case 'echo_ready':
+            this.echoReadyHandler(message);
             break;
     }
 }
@@ -56,6 +64,12 @@ Signaller.prototype.setHandler = function(type, handler) {
             break;
         case "hangup":
             this.hangupHandler = handler;
+            break;
+        case "echo_start":
+            this.echoStartHandler = handler;
+            break;
+        case "echo_ready":
+            this.echoReadyHandler = handler;
             break;
     }
 }

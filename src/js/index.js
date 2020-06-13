@@ -49,6 +49,8 @@ function startWebsocket() {
     signaller.setHandler("announce", announceHandler);
     signaller.setHandler("ice", iceHandler);
     signaller.setHandler("hangup", hangupHandler);
+    signaller.setHandler("echo_start", echoStartHandler);
+    signaller.setHandler("echo_ready", echoReadyHandler);
 }
 
 // Set up media stream handlers
@@ -75,6 +77,10 @@ function createRemoteMediaStreamHandlerFor(peerId){
         let audio = remoteTrack.querySelector('audio')
         audio.srcObject = event.stream;
         remoteTracks.push({"peerId": peerId, "track": remoteTrack});
+
+
+        // set up echo test handler
+        remoteTrack.querySelector('.run-echo-test').onclick = runEchoTest(peerId);
         };
 }
 function handleLocalMediaStreamError(error) {
@@ -191,6 +197,108 @@ function hangupHandler(message) {
     peerConnections[peerIndex].connection.close();
     peerConnections.splice(peerIndex, 1);
 }
+// Listen for echo requests
+// 
+function getVolume(analyser) {
+    let bufferLength = analyser.frequencyBinCount;
+    let dataArray = new Uint8Array(bufferLength);
+    analyser.getByteTimeDomainData(dataArray);
+    return dataArray.reduce((a,b) => a + b, 0) / dataArray.length
+}
+async function detectPulse(ctx, analyser, name, callback) {
+    while (1)  {
+        var vol = Math.abs(128 - getVolume(analyser));
+        if (vol > 0) {
+            console.log(name);
+            console.log(vol);
+            console.log(ctx.currentTime);
+            callback(ctx);
+            return
+        }
+        await new Promise(r => setTimeout(r, 1));
+    }
+}
+function finishEcho(track, peer) {
+    return function(ctx) {
+        console.log("finish echo");
+        // stop the echo and resume the mid
+        peer.connection.getSenders()[0].replaceTrack(track);
+    }
+}
+
+async function echoStartHandler(message) {
+    console.log("RECEIVED ECHO START REQUEST");
+    let peerId = message.sender_guid;
+    let peer = peerConnections.find( peer => peer.id == peerId);
+    let ctx = new AudioContext();
+    let remoteTrack = peer.connection.getReceivers()[0].track
+    let remoteStream = peer.connection.getRemoteStreams()[0];
+
+    // mute the mic
+    let originalTrack = peer.connection.getSenders()[0].track;
+    peer.connection.getSenders()[0].replaceTrack(remoteTrack);
+
+    // Echo input from remotePeer back to remotePeer
+    // Set up on onaddstream here
+    let reflector = ctx.createMediaStreamSource(remoteStream);
+
+        // Listen for a pulse (remote side should mute the mic during the test)
+    let analyser = ctx.createAnalyser();
+    reflector.connect(analyser);
+    //reflector.connect(ctx.destination);
+    detectPulse(ctx, analyser, "echo", finishEcho(originalTrack, peer));
+    signaller.send(new Message("echo_ready",null,localClientGuid,peerId));
+}
+function remotePulseHandler(ctx) {
+     
+}
+function localPulseHandler(track,peer) {
+    return function(ctx) {
+        console.log("localpulsehandler");
+        track.enabled = true;
+        peer.connection.getSenders()[0].replaceTrack(track);
+    }
+}
+// Send echo test
+// 
+async function echoReadyHandler(message) {
+    console.log("RECEIVED ECHO READY RESPONSE");
+    let peerId = message.sender_guid;
+    let peer = peerConnections.find( peer => peer.id == peerId);
+    let sonarCtx = new AudioContext();
+    let osc = sonarCtx.createOscillator();
+
+    let remoteDestination = sonarCtx.createMediaStreamDestination();
+    osc.connect(remoteDestination);
+
+    // mute the mic
+    let originalTrack = peer.connection.getSenders()[0].track;
+    peer.connection.getSenders()[0].replaceTrack(remoteDestination.stream.getTracks()[0]);
+    await new Promise(r => setTimeout(r, 1000));
+
+    // Set up listener for remote pulse
+    let remoteTrack = peer.connection.getReceivers()[0].track
+    let remoteStream = peer.connection.getRemoteStreams()[0];
+    let remoteAnalyser = sonarCtx.createAnalyser();
+    let remoteSource = sonarCtx.createMediaStreamSource(remoteStream);
+    detectPulse(sonarCtx, remoteAnalyser, "remote pulse", remotePulseHandler);
+    remoteSource.connect(remoteAnalyser);
+    //remoteSource.connect(sonarCtx.destination);
+    
+    // Set up listener for local pulse
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(440,sonarCtx.currentTime);
+    let localAnalyser = sonarCtx.createAnalyser();
+    detectPulse(sonarCtx, localAnalyser, "local pulse", localPulseHandler(originalTrack, peer));
+    osc.connect(localAnalyser);
+    //osc.connect(sonarCtx.destination);
+    
+    // Send a pulse
+    
+    osc.start();
+    osc.stop(sonarCtx.currentTime + 0.05);
+   // osc.stop(sonarCtx.currentTime + 2);
+}
 
 // Reset Connections
 function resetConnections() {
@@ -269,10 +377,23 @@ function setCodecParams(event) {
     resetConnections();
 };
 
+function runEchoTest(peerId) {
+    return async function() {
+        console.log("START ECHO TEST");
+        // mute the mic
+        let peer = peerConnections.find( peer => peer.id == peerId);
+        peer.connection.getSenders()[0].track.enabled = false;
+        await new Promise(r => setTimeout(r, 1000));
+        // set up an onaddtrack at which we can start the ping
+        signaller.send(new Message("echo_start",null,localClientGuid,peerId));
+    }
+};
+
 // Handle codec parameter selection
 document.querySelectorAll('select').forEach(function(element) {
     element.onchange = setCodecParams;
 });
+
     
     
 // ==================================================================//  

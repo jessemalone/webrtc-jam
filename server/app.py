@@ -19,7 +19,7 @@ async def dispatch(websocket, path):
             if (message.type == "announce"):
                 message_handler.add_client(client)
                 await message_handler.broadcast(client, message)
-            elif (message.type in ["offer","answer","ice"]):
+            elif (message.type in ["offer","answer","ice","echo_start","echo_ready"]):
                 await message_handler.send(client, message)
     finally:
         message_handler.remove_client(client)

@@ -44,9 +44,11 @@ test('Signaller.setHandler calls the right handler', () => {
     let announce_message = new Message("announce", data, expected_sender, expected_receiver);
     let ice_message = new Message("ice", data, expected_sender, expected_receiver);
     let hangup_message = new Message("hangup", data, expected_sender, expected_receiver);
+    let echo_start_message = new Message("echo_start", data, expected_sender, expected_receiver);
+    let echo_ready_message = new Message("echo_ready", data, expected_sender, expected_receiver);
 
     // It calls the right handler for the message type
-    const sample_messages = [hangup_message, offer_message, ice_message, answer_message, announce_message]
+    const sample_messages = [echo_start_message, echo_ready_message, hangup_message, offer_message, ice_message, answer_message, announce_message]
     for (const i in sample_messages) {
         jest.clearAllMocks();
         var sample_message = sample_messages[i]
