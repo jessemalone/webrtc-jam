@@ -296,7 +296,7 @@ async function echoReadyHandler(message) {
     let localAnalyser = sonarCtx.createAnalyser();
     detectPulse(sonarCtx, localAnalyser, "local pulse", localPulseHandler(originalTrack, peer));
     osc.connect(localAnalyser);
-    //osc.connect(sonarCtx.destination);
+    osc.connect(sonarCtx.destination);
     
     // Send a pulse
     
