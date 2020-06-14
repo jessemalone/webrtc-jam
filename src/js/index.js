@@ -301,7 +301,7 @@ async function echoReadyHandler(message) {
     // Send a pulse
     
     osc.start();
-    osc.stop(sonarCtx.currentTime + 0.01);
+    osc.stop(sonarCtx.currentTime + 0.05);
    // osc.stop(sonarCtx.currentTime + 2);
 }
 
