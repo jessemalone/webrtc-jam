@@ -223,6 +223,11 @@ RUN chmod -R 777 /app
 RUN /usr/local/bin/pip install -r /app/server/requirements.txt
 RUN cd /app/server/; ./run_tests.sh; cd ../..;
 
+ARG TURN_HOST=${TURN_HOST}
+RUN echo "TURN host set to ${TURN_HOST}"
+ARG TURN_USERNAME=${TURN_USERNAME}
+ARG TURN_PASSWORD=${TURN_PASSWORD}
+
 RUN cd /app/; npm install; npm run test; cd ..;
 RUN cd /app/; npm run build; cd ..;
 

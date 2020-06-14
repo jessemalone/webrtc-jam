@@ -6,7 +6,7 @@ import {Signaller} from './signaller'
 import {Message} from './message'
 import {Peer} from './peer'
 import {SdpParams} from './sdp_params'
-
+console.log(TURN_HOST);
 const mediaStreamConstraints = {
     audio: {
         autoGainContol: false,

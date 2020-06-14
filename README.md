@@ -18,7 +18,10 @@ popd
 ### Run in docker:
 
 ```
-docker build -t webrtc-jam -f docker/Dockerfile .
+TURN_HOST=<turn server address>
+TURN_USERNAME=<turn server username>
+TURN_PASSWORD=<turn server password>
+./build.sh
 npm install
 npm run serve
 ```

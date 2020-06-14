@@ -5,7 +5,8 @@ export function createPeer(iceCandidateHandler) {
     const config = {
         iceServers: [
             {urls: ["stun:stun1.l.google.com:19302"]},
-            {urls: ["stun:stun2.l.google.com:19302"]}
+            {urls: ["stun:stun2.l.google.com:19302"]},
+            {urls: ["turn:" + TURN_HOST],username: TURN_USERNAME, credential:TURN_PASSWORD}
         ]
     }
     let localPeerConnection = new RTCPeerConnection(config)
