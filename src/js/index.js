@@ -212,6 +212,7 @@ async function detectPulse(ctx, analyser, name, callback) {
             console.log(name);
             console.log(vol);
             console.log(ctx.currentTime);
+            console.log(new Date().getTime());
             callback(ctx);
             return
         }
@@ -253,7 +254,8 @@ function remotePulseHandler(ctx) {
      
 }
 function localPulseHandler(track,peer) {
-    return function(ctx) {
+    return async function(ctx) {
+        await new Promise(r => setTimeout(r, 5000));
         console.log("localpulsehandler");
         track.enabled = true;
         peer.connection.getSenders()[0].replaceTrack(track);
@@ -296,7 +298,7 @@ async function echoReadyHandler(message) {
     // Send a pulse
     
     osc.start();
-    osc.stop(sonarCtx.currentTime + 0.05);
+    osc.stop(sonarCtx.currentTime + 0.01);
    // osc.stop(sonarCtx.currentTime + 2);
 }
 
