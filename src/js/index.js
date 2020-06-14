@@ -210,7 +210,6 @@ async function detectPulse(ctx, analyser, name, callback) {
         var vol = Math.abs(128 - getVolume(analyser));
         if (vol > 0) {
             console.log(name);
-            console.log(vol);
             console.log(ctx.currentTime);
             console.log(new Date().getTime());
             callback(ctx);
@@ -259,6 +258,10 @@ function localPulseHandler(track,peer) {
         console.log("localpulsehandler");
         track.enabled = true;
         peer.connection.getSenders()[0].replaceTrack(track);
+        
+        // Re-enable the echo test button
+        let remoteTrack = remoteTracks.find( track => track.peerId == peer.id);
+        remoteTrack.track.querySelector('.run-echo-test').disabled = false;
     }
 }
 // Send echo test
@@ -382,12 +385,16 @@ function setCodecParams(event) {
 function runEchoTest(peerId) {
     return async function() {
         console.log("START ECHO TEST");
+        // Disable the button first
+        let remoteTrack = remoteTracks.find( track => track.peerId == peerId);
+        remoteTrack.track.querySelector('.run-echo-test').disabled = true;
         // mute the mic
         let peer = peerConnections.find( peer => peer.id == peerId);
         peer.connection.getSenders()[0].track.enabled = false;
         await new Promise(r => setTimeout(r, 1000));
         // set up an onaddtrack at which we can start the ping
         signaller.send(new Message("echo_start",null,localClientGuid,peerId));
+        
     }
 };
 
