@@ -6,11 +6,22 @@ import {Signaller, Message} from './lib';
 import Tracks from './components/Tracks';
 
 class App extends React.Component {
-    state = {
-        peers: [],
-        tracks: []
-    };
-    signaller = {};
+    constructor(props) {
+        super(props);
+        this.state = {
+            peers: [],
+            tracks: [],
+            signaller: {}
+        };
+    }
+
+    componentDidMount() {
+
+    }
+
+    componentWillUnmount() {
+
+    }
 
     render() {
         return (

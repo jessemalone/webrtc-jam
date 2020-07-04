@@ -31,11 +31,11 @@ describe('new WebRtcSession', () => {
         expect(mockSignaller.setHandler.mock.calls.length).toBe(5);
         expect(mockSignaller.setHandler.mock.calls).toEqual(expect.arrayContaining(
             [
-                ["answer", webRtcSession.handleAnswer],
-                ["offer", webRtcSession.handleOffer],
-                ["ice", webRtcSession.handleIceCandidate],
-                ["announce", webRtcSession.handleAnnounce],
-                ["hangup", webRtcSession.handleHangup]
+                ["answer", expect.any(Function)],
+                ["offer", expect.any(Function)],
+                ["ice", expect.any(Function)],
+                ["announce", expect.any(Function)],
+                ["hangup", expect.any(Function)]
             ]
         ));
     });
@@ -52,7 +52,8 @@ describe('WebRtcSession.answerHandler', () => {
         message = new Message('answer',expected_data,'sender','receiver');
     });
     test('It sets the remote description on the right peer connection', () => {
-        webRtcSession.handleAnswer(message);
+        let handler = webRtcSession.getAnswerHandler();
+        handler(message);
         expect(mockPeerConnection.setRemoteDescription.mock.calls.length).toBe(1);
     });
     test('It sets the addstream handler on the peer connection', () => {
@@ -60,7 +61,8 @@ describe('WebRtcSession.answerHandler', () => {
         let mockStreamHandler = jest.fn((obj) => {});
 
         webRtcSession.onaddstream = mockStreamHandler;
-        webRtcSession.handleAnswer(message);
+        let handler = webRtcSession.getAnswerHandler();
+        handler(message);
 
         // It sets the addstream handler
         mockPeerConnection.onaddstream({stream: "stream"});
@@ -95,18 +97,21 @@ describe('WebRtcSession.offerHandler', () => {
     });
 
     test('It adds the peer connection to the webrtc session', () => {
-        webRtcSession.handleOffer(message);
+        let handler = webRtcSession.getOfferHandler();
+        handler(message);
         expect(peerConnections.length).toBe(3);
     });
 
     test('It sets the remote description on the right peer connection', () => {
-        webRtcSession.handleOffer(message);
+        let handler = webRtcSession.getOfferHandler();
+        handler(message);
         expect(mockPeerConnection.setRemoteDescription.mock.calls.length).toBe(1);
         expect(mockPeerConnection.setRemoteDescription.mock.calls[0][0]).toBe(expected_data);
     });
 
     test('It sets the local description on the right peer connection', () => {
-        webRtcSession.handleOffer(message);
+        let handler = webRtcSession.getOfferHandler();
+        handler(message);
         
         let checkPromise = function() {
             expect(mockPeerConnection.setLocalDescription.mock.calls.length).toBe(1);
@@ -116,7 +121,8 @@ describe('WebRtcSession.offerHandler', () => {
     });
 
     test('It sends an answer', () => {
-        webRtcSession.handleOffer(message);
+        let handler = webRtcSession.getOfferHandler();
+        handler(message);
         
         let expected_message = new Message("answer","answer","", message.sender_guid);
         let checkPromise = function() {
@@ -128,7 +134,8 @@ describe('WebRtcSession.offerHandler', () => {
     });
 
     test('It adds a stream', () => {
-        webRtcSession.handleOffer(message);
+        let handler = webRtcSession.getOfferHandler();
+        handler(message);
         expect(mockPeerConnection.addStream.mock.calls.length).toBe(1);
         expect(mockPeerConnection.addStream.mock.calls[0][0]).toBe(mockStream);
     });
@@ -138,7 +145,8 @@ describe('WebRtcSession.offerHandler', () => {
         let expected_event = {peerId: 'sender', stream: 'stream'};
 
         webRtcSession.onaddstream = mockStreamHandler;
-        webRtcSession.handleOffer(message);
+        let handler = webRtcSession.getOfferHandler();
+        handler(message);
 
         mockPeerConnection.onaddstream({stream: "stream"});
         expect(mockStreamHandler.mock.calls.length).toBe(1);
@@ -169,16 +177,19 @@ describe('WebRtcSession.announceHandler', () => {
         }
     });
     test('It adds the peer connection to the webrtc session', () => {
-        webRtcSession.handleAnnounce(message);
+        let handler = webRtcSession.getAnnounceHandler();
+        handler(message);
         expect(peerConnections.length).toBe(3);
     });
     test('It adds a stream', () => {
-        webRtcSession.handleAnnounce(message);
+        let handler = webRtcSession.getAnnounceHandler();
+        handler(message);
         expect(mockPeerConnection.addStream.mock.calls.length).toBe(1);
         expect(mockPeerConnection.addStream.mock.calls[0][0]).toBe(mockStream);
     });
     test('It sends an offer', () => {
-        webRtcSession.handleAnnounce(message);
+        let handler = webRtcSession.getAnnounceHandler();
+        handler(message);
         
         let expected_message = new Message("offer",expected_offer,"", message.sender_guid);
         let checkPromise = function() {
@@ -188,7 +199,8 @@ describe('WebRtcSession.announceHandler', () => {
         return mockOfferPromise.finally(checkPromise);
     });
     test('It sets the local description on the peer connection', () => {
-        webRtcSession.handleAnnounce(message);
+        let handler = webRtcSession.getAnnounceHandler();
+        handler(message);
         
         let expected_message = new Message("offer",expected_offer,"", message.sender_guid);
         let checkPromise = function() {
@@ -219,7 +231,8 @@ describe('WebRtcSession.handleIceCandidate', () => {
 
     });
     test('It calls addIceCandidate on the right peerConnection', () => {
-        webRtcSession.handleIceCandidate(message);
+        let handler = webRtcSession.getIceCandidateHandler();
+        handler(message);
         expect(mockPeerConnection.addIceCandidate.mock.calls.length).toBe(1);
         expect(mockPeerConnection.addIceCandidate.mock.calls[0][0]).toBe(expected_candidate);
     });
@@ -240,14 +253,16 @@ describe('WebRtcSession.handleHangup', () => {
         let expected_event = {peerId: 'sender'};
         let mockHangupHandler = jest.fn((event) => {});
         webRtcSession.onhangup = mockHangupHandler;
-        
-        webRtcSession.handleHangup(message);
+
+        let handler = webRtcSession.getHangupHandler();
+        handler(message);
 
         expect(mockHangupHandler.mock.calls.length).toBe(1);
         expect(mockHangupHandler.mock.calls[0][0]).toMatchObject(expected_event);
     });
     test('It removes the right peer connection', () => {
-        webRtcSession.handleHangup(message);
+        let handler = webRtcSession.getHangupHandler();
+        handler(message);
         expect(peerConnections.length).toBe(1);
         expect(peerConnections[0].id).toBe('another');
         expect(mockPeer.connection.close.mock.calls.length).toBe(1);
