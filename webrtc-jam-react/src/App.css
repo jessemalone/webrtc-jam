@@ -1,5 +1,18 @@
+body {
+    background: #334;
+}
 .App {
-  text-align: center;
+  text-align: left;
+}
+
+.App.tracks {
+    margin: 30px;
+}
+.track {
+    margin-bottom: 30px;
+}
+.track-latency {
+    text-align: right;
 }
 
 .App-logo {

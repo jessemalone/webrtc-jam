@@ -5,6 +5,9 @@ import {WebRtcSession} from '../lib/WebRtcSession';
 
 import {Track} from './Track';
 import {TrackLatency} from './TrackLatency';
+import GridItem from "components/Grid/GridItem.js";
+import GridContainer from "components/Grid/GridContainer.js";
+import Paper from '@material-ui/core/Paper';
 
 class Tracks extends React.Component {
     constructor(props) {
@@ -104,19 +107,30 @@ class Tracks extends React.Component {
 
     render() {
         return (
-            <div className="tracks">
-                <div className="local-track">
-                    <Track name="Local" id="local" stream={ this.state.localStream } />
-                </div>
-                <div className="remote-tracks">
+            <div className="tracks-container">
+                <Paper className="local-track track">
+                    <GridContainer alignItems="center">
+                        <GridItem xs={6}>
+                            <Track name="Local" id="local" stream={ this.state.localStream } />
+                        </GridItem>
+                        <GridItem xs={6}>
+                            <TrackLatency />
+                        </GridItem>
+                    </GridContainer>
+                </Paper>
                 { this.state.streams.map((stream) => 
-                    <div className="remote-track">
-                    <Track id={stream.peerId} name={stream.peerId} stream={stream.stream}  />
-                    <TrackLatency stats={this.state.stats[stream.peerId]} />
-                    </div>
+                    <Paper className="remote-track track">
+                        <GridContainer alignItems="center">
+                            <GridItem xs={6}>
+                                <Track id={stream.peerId} name={stream.peerId} stream={stream.stream}  />
+                            </GridItem>
+                            <GridItem xs={6}>
+                                <TrackLatency stats={this.state.stats[stream.peerId]} />
+                            </GridItem>
+                        </GridContainer>
+                    </Paper>
                 )}
-                </div>
-            </div>
+         </div>
         );
     }
 }

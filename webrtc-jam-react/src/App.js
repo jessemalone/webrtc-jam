@@ -3,32 +3,24 @@ import logo from './logo.svg';
 import './App.css';
 
 import Tracks from './components/Tracks';
+import Header from './components/Header/Header';
+import Container from '@material-ui/core/Container';
 
 class App extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {
-            peers: [],
-            tracks: [],
-            signaller: {}
-        };
-    }
-
-    componentDidMount() {
-
-    }
-
-    componentWillUnmount() {
-
     }
 
     render() {
         return (
             <div className="App">
-                <header className="App-header">
-                <img src={logo} className="App-logo" alt="logo" />
-                </header>
-                <Tracks />
+                <Header 
+                    color="dark"
+                    brand="WebRTC Jam"
+                />
+                <Container maxWidth="lg">
+                    <Tracks />
+                </Container>
             </div>
         );
   }

@@ -16,8 +16,6 @@ class TrackLatency extends React.Component {
     updateStats() {
         this.props.stats.forEach((entry) => {
             if (entry.roundTripTime != null) {
-                console.log("STAT");
-                console.log(entry.roundTripTime);
                 this.latency = entry.roundTripTime;
                 return;
             }
