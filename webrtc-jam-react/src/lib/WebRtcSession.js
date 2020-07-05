@@ -1,5 +1,3 @@
-'use strict'
-
 import {Message} from './Message'
 import {Peer} from './Peer'
 
@@ -36,7 +34,7 @@ WebRtcSession.prototype.getAnswerHandler = function() {
         console.log(answer);
 
         // Find the right peer
-        let peer = that.peerConnections.find( peer => peer.id == message.sender_guid);
+        let peer = that.peerConnections.find( peer => peer.id === message.sender_guid);
 
         // Set up the peer
         peer.connection.setRemoteDescription(message.data);
@@ -112,7 +110,7 @@ WebRtcSession.prototype.getIceCandidateHandler = function() {
         console.log("GOT REMOTE ICE");
         let candidate = message.data;
         // Find the right peer
-        let peer = that.peerConnections.find( peer => peer.id == message.sender_guid);
+        let peer = that.peerConnections.find( peer => peer.id === message.sender_guid);
 
         // Add the ice candidate to the peer connection
         if (candidate != null) {
@@ -130,7 +128,7 @@ WebRtcSession.prototype.getHangupHandler = function() {
         that.onhangup({peerId: peerId});
 
         // Remove the peer connection
-        let peerIndex = that.peerConnections.findIndex( peer => peer.id == peerId);
+        let peerIndex = that.peerConnections.findIndex( peer => peer.id === peerId);
         that.peerConnections[peerIndex].connection.close();
         that.peerConnections.splice(peerIndex, 1);
     }
@@ -155,6 +153,11 @@ WebRtcSession.prototype.createPeer = function(iceCandidateHandler) {
 
 WebRtcSession.prototype.createRTCIceCandidate = function(candidate) {
     return new RTCIceCandidate(candidate);
+}
+
+WebRtcSession.prototype.getStats = function(peerId) {
+    let peer = this.peerConnections.find( peer => peer.id === peerId);
+    return peer.connection.getStats();
 }
 
 export {WebRtcSession}

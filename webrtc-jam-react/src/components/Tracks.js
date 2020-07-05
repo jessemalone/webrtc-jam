@@ -4,15 +4,16 @@ import {Signaller} from '../lib/Signaller';
 import {WebRtcSession} from '../lib/WebRtcSession';
 
 import {Track} from './Track';
+import {TrackLatency} from './TrackLatency';
 
 class Tracks extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
             localStream: null,
-            streams: []
+            streams: [],
+            stats: {}
         };
-        this.streams = [];
     }
 
     componentDidMount() {
@@ -60,6 +61,7 @@ class Tracks extends React.Component {
             that.websocket.onopen = function() {
                 that.signaller.announce();
             }
+            this.startStatsReporting();
         };
     }
 
@@ -72,7 +74,6 @@ class Tracks extends React.Component {
             let streams = that.state.streams;
             streams.push(stream);
             that.setState({streams: streams});
-            
         }
     }
 
@@ -80,10 +81,25 @@ class Tracks extends React.Component {
         let that = this;
         return function(peerId) {
             let streams = that.state.streams;
-            let peerIndex = streams.findIndex( peer => peer.id == peerId);
+            let peerIndex = streams.findIndex( peer => peer.id === peerId);
             streams.splice(peerIndex, 1);
             that.setState({streams: streams});
         }
+    }
+    
+    startStatsReporting() {
+        let that = this;
+        setInterval(() => {
+            for (let i in that.state.streams) {
+                // find the audio track
+                let stream = that.state.streams[i];
+                that.webRtcSession.getStats(stream.peerId).then((statsReport) => {
+                    let stats = that.state.stats;
+                    stats[stream.peerId] = statsReport;
+                    that.setState({stats: stats});
+                });
+            }
+        }, 1000);
     }
 
     render() {
@@ -94,7 +110,10 @@ class Tracks extends React.Component {
                 </div>
                 <div className="remote-tracks">
                 { this.state.streams.map((stream) => 
-                    <Track id={stream.peerId} name={stream.peerId} stream={stream.stream} />
+                    <div className="remote-track">
+                    <Track id={stream.peerId} name={stream.peerId} stream={stream.stream}  />
+                    <TrackLatency stats={this.state.stats[stream.peerId]} />
+                    </div>
                 )}
                 </div>
             </div>

@@ -1,5 +1,3 @@
-'use strict'
-
 function Message(type,data,sender_guid, receiver_guid) {
     this.type = type;
     this.data = data;

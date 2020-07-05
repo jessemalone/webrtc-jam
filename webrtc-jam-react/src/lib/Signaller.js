@@ -1,5 +1,3 @@
-'use strict'
-
 import {Message} from './Message'
 
 function Signaller(websocket) {
@@ -31,6 +29,7 @@ Signaller.prototype.messageHandler = function(event) {
         case 'hangup':
             this.hangupHandler(message);
             break;
+        default:
     }
 }
 
@@ -57,6 +56,7 @@ Signaller.prototype.setHandler = function(type, handler) {
         case "hangup":
             this.hangupHandler = handler;
             break;
+        default:
     }
 }
 

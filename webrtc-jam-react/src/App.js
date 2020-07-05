@@ -2,7 +2,6 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
-import {Signaller, Message} from './lib';
 import Tracks from './components/Tracks';
 
 class App extends React.Component {

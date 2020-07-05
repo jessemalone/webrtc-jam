@@ -268,3 +268,24 @@ describe('WebRtcSession.handleHangup', () => {
     });
 });
 
+describe('WebRtcSession.getStats', () => {
+    let webRtcSession;
+    let mockPeer;
+    beforeEach(() => {
+        mockPeer = peerConnections[0]
+        let mockStatsPromise = Promise.resolve('stats');
+        mockPeer.connection.getStats = jest.fn((obj) => {
+            return mockStatsPromise;
+        });
+        webRtcSession = new WebRtcSession(mockStream, mockSignaller, options);
+        webRtcSession.peerConnections = peerConnections;
+    });
+    test('It returns a promise with the stats object', () => {
+        let promise = webRtcSession.getStats(mockPeer.id);
+        let checkPromise = function(stats) {
+            expect(stats).toBe('stats');
+        };
+        return promise.then(checkPromise);
+    });
+});
+
