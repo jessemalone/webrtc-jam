@@ -2,7 +2,6 @@ import {Signaller} from '../Signaller'
 import {Message} from '../Message'
 import {WebRtcSession} from '../WebRtcSession'
 import {Peer} from '../Peer'
-import {SdpParams} from '../SdpParams'
 
 let peerConnections;
 let mockPeerConnection;
@@ -26,7 +25,7 @@ beforeEach(() => {
 
 describe('new WebRtcSession', () => {
     test('It sets message handlers on the signaller', () => {
-        let webRtcSession = new WebRtcSession(mockStream, mockSignaller, options, new SdpParams());
+        let webRtcSession = new WebRtcSession(mockStream, mockSignaller, options);
 
         expect(mockSignaller.setHandler.mock.calls.length).toBe(5);
         expect(mockSignaller.setHandler.mock.calls).toEqual(expect.arrayContaining(
@@ -46,7 +45,7 @@ describe('WebRtcSession.answerHandler', () => {
     let message;
     let expected_data;
     beforeEach(() => {
-        webRtcSession = new WebRtcSession(mockStream, mockSignaller, options, new SdpParams());
+        webRtcSession = new WebRtcSession(mockStream, mockSignaller, options);
         webRtcSession.peerConnections = peerConnections;
         expected_data = 'sdp';
         message = new Message('answer',expected_data,'sender','receiver');
@@ -77,7 +76,7 @@ describe('WebRtcSession.offerHandler', () => {
     let expected_data;
     let mockAnswerPromise;
     beforeEach(() => {
-        webRtcSession = new WebRtcSession(mockStream, mockSignaller, options, new SdpParams());
+        webRtcSession = new WebRtcSession(mockStream, mockSignaller, options);
         webRtcSession.peerConnections = peerConnections;
         expected_data = 'sdp';
         message = new Message('offer',expected_data,'sender','receiver');
@@ -161,7 +160,7 @@ describe('WebRtcSession.announceHandler', () => {
     let expected_offer = 'offer';
     beforeEach(() => {
         message = new Message('announce',"",'sender','receiver');
-        webRtcSession = new WebRtcSession(mockStream, mockSignaller, options, new SdpParams());
+        webRtcSession = new WebRtcSession(mockStream, mockSignaller, options);
         webRtcSession.peerConnections = peerConnections;
 
         // Set up createPeer to return a mock peerConnections
@@ -225,7 +224,7 @@ describe('WebRtcSession.handleIceCandidate', () => {
             new Peer('another', {})
         ];
 
-        webRtcSession = new WebRtcSession(mockStream, mockSignaller, options, new SdpParams());
+        webRtcSession = new WebRtcSession(mockStream, mockSignaller, options);
         webRtcSession.createRTCIceCandidate = jest.fn((obj) => {return obj});
         webRtcSession.peerConnections = peerConnections;
 
@@ -246,7 +245,7 @@ describe('WebRtcSession.handleHangup', () => {
         message = new Message('hangup','','sender','receiver');
         mockPeer = peerConnections[0]
         mockPeer.connection.close = jest.fn((obj) => {});
-        webRtcSession = new WebRtcSession(mockStream, mockSignaller, options, new SdpParams());
+        webRtcSession = new WebRtcSession(mockStream, mockSignaller, options);
         webRtcSession.peerConnections = peerConnections;
     });
     test('It calls onhangup with the right peer id', () => {

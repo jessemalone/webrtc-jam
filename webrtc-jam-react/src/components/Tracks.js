@@ -2,7 +2,6 @@ import React from 'react';
 
 import {Signaller} from '../lib/Signaller';
 import {WebRtcSession} from '../lib/WebRtcSession';
-import {SdpParams} from '../lib/SdpParams';
 
 import {Track} from './Track';
 
@@ -10,7 +9,6 @@ class Tracks extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            sdpParams: new SdpParams(),
             localStream: null,
             streams: []
         };
@@ -50,8 +48,7 @@ class Tracks extends React.Component {
                 new WebRtcSession(
                     that.state.localStream,
                     that.signaller,
-                    options,
-                    that.state.sdpParams
+                    options
                 );
 
             // set up handlers for add / remove stream

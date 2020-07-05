@@ -3,11 +3,10 @@
 import {Message} from './Message'
 import {Peer} from './Peer'
 
-function WebRtcSession(stream, signaller, options, sdpParams) {
+function WebRtcSession(stream, signaller, options) {
     this.signaller = signaller;
     this.localStream = stream;
     this.peerConnections = [];
-    this.sdpParams = sdpParams;
     this.options = options;
 
     this.signaller.setHandler("answer", this.getAnswerHandler());
@@ -27,37 +26,6 @@ WebRtcSession.prototype.createRemoteStreamHandlerFor = function(peerId) {
     return(function(event) {
         addstream({peerId: peerId, stream: event.stream});
     });
-}
-
-WebRtcSession.prototype.mungeSDP = function(offer, sdpParams) {
-    console.log("MUNGE!");
-
-    // munge the SDP
-    if (sdpParams.rate != "") {
-        offer.sdp = offer.sdp.replace(/maxplaybackrate=\d*;/,"");
-        offer.sdp = offer.sdp.replace("useinbandfec=1","maxplaybackrate=" + sdpParams.rate + ";useinbandfec=1");
-    }
-    if (sdpParams.stereo != "") {
-        console.log("MUNGE STEREO");
-        offer.sdp = offer.sdp.replace(/stereo=\d*;/,"");
-        offer.sdp = offer.sdp.replace("useinbandfec=1","stereo=" + sdpParams.stereo + ";useinbandfec=1");
-    }
-    if (sdpParams.maxptime != "") {
-        offer.sdp = offer.sdp.replace("useinbandfec=1\r\n","useinbandfec=1\r\na=maxptime:" + sdpParams.maxptime + "\r\n");
-    }
-    if (sdpParams.ptime != "") {
-        offer.sdp = offer.sdp.replace("useinbandfec=1\r\n","useinbandfec=1\r\na=ptime:" + sdpParams.ptime + "\r\n");
-    }
-    if (sdpParams.maxaveragebitrate != "") {
-        offer.sdp = offer.sdp.replace("useinbandfec=1","maxaveragebitrate=" + sdpParams.maxaveragebitrate + ";useinbandfec=1");
-    }
-    if (sdpParams.useinbandfec != "") {
-        console.log("MUNGE USEINBANDFEC");
-        console.log(sdpParams);
-        offer.sdp = offer.sdp.replace(/useinbandfec=\d/,"useinbandfec=" +  sdpParams.useinbandfec);
-    }
-    console.log(offer.sdp);
-    return offer;
 }
 
 WebRtcSession.prototype.getAnswerHandler = function() { 
@@ -100,7 +68,6 @@ WebRtcSession.prototype.getOfferHandler = function() {
         newPeerConnection.createAnswer().then(function(answer) {
             console.log("sending answer");
             newPeerConnection.setLocalDescription(answer);
-            answer = that.mungeSDP(answer, that.sdpParams);
             that.signaller.send(new Message("answer",answer,"",message.sender_guid));
         });
 
@@ -130,7 +97,6 @@ WebRtcSession.prototype.getAnnounceHandler = function() {
         newPeerConnection.createOffer(that.options)
             .then(function(offer){
                 newPeerConnection.setLocalDescription(offer);
-                offer = that.mungeSDP(offer, that.sdpParams);
                 that.signaller.send(new Message("offer",offer,"",message.sender_guid));
             });
 
