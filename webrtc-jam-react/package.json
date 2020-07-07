@@ -20,7 +20,9 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "serve": "docker run -p 8780:80 -it webrtc-jam",
     "build": "react-scripts build",
+    "build-docker": "docker build -t webrtc-jam -f docker/Dockerfile --build-arg TURN_HOST=${REACT_APP_TURN_HOST} --build-arg TURN_USERNAME=${REACT_APP_TURN_USERNAME} --build-arg TURN_PASSWORD=${REACT_APP_TURN_PASSWORD} .",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
