@@ -216,15 +216,15 @@ RUN apt update -y; apt install -y npm
 RUN npm install -g n; n stable;
 RUN npm install -g latest-version
 
-COPY . /app
-COPY ./docker/nginx-site.conf /etc/nginx/conf.d/default.conf
+COPY ./webrtc-jam-react/ /app
+COPY ./webrtc-jam-react/docker/nginx-site.conf /etc/nginx/conf.d/default.conf
 RUN chmod -R 777 /app
 
 RUN /usr/local/bin/pip install -r /app/server/requirements.txt
 RUN cd /app/server/; ./run_tests.sh; cd ../..;
 
 ARG REACT_APP_TURN_HOST=${REACT_APP_TURN_HOST}
-RUN echo "TURN host set to ${TURN_HOST}"
+RUN echo "TURN host set to ${REACT_APP_TURN_HOST}"
 ARG REACT_APP_TURN_USERNAME=${REACT_APP_TURN_USERNAME}
 ARG REACT_APP_TURN_PASSWORD=${REACT_APP_TURN_PASSWORD}
 
