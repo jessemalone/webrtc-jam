@@ -7,11 +7,11 @@ function WebRtcSession(stream, signaller, options) {
     this.peerConnections = [];
     this.options = options;
 
-    this.signaller.setHandler("answer", this.getAnswerHandler());
-    this.signaller.setHandler("offer", this.getOfferHandler());
-    this.signaller.setHandler("announce", this.getAnnounceHandler());
-    this.signaller.setHandler("ice", this.getIceCandidateHandler());
-    this.signaller.setHandler("hangup", this.getHangupHandler());
+    this.signaller.addHandler("answer", this.getAnswerHandler());
+    this.signaller.addHandler("offer", this.getOfferHandler());
+    this.signaller.addHandler("announce", this.getAnnounceHandler());
+    this.signaller.addHandler("ice", this.getIceCandidateHandler());
+    this.signaller.addHandler("hangup", this.getHangupHandler());
 }
 
 WebRtcSession.prototype.onaddstream = function(event) {
@@ -129,8 +129,10 @@ WebRtcSession.prototype.getHangupHandler = function() {
 
         // Remove the peer connection
         let peerIndex = that.peerConnections.findIndex( peer => peer.id === peerId);
-        that.peerConnections[peerIndex].connection.close();
-        that.peerConnections.splice(peerIndex, 1);
+        if (that.peerConnections[peerIndex]) {
+            that.peerConnections[peerIndex].connection.close();
+            that.peerConnections.splice(peerIndex, 1);
+        }
     }
 }
 
@@ -157,7 +159,13 @@ WebRtcSession.prototype.createRTCIceCandidate = function(candidate) {
 
 WebRtcSession.prototype.getStats = function(peerId) {
     let peer = this.peerConnections.find( peer => peer.id === peerId);
-    return peer.connection.getStats();
+
+    if (peer) {
+        return peer.connection.getStats();
+    }
+    else {
+        return Promise.resolve(null);
+    }
 }
 
 export {WebRtcSession}

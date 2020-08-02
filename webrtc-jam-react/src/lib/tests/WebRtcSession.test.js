@@ -13,7 +13,7 @@ beforeEach(() => {
     mockPeerConnection = {};
     mockSignaller = {
         send: jest.fn((obj) => {}),
-        setHandler: jest.fn((type,handler) => {})
+        addHandler: jest.fn((type,handler) => {})
     };
     mockPeerConnection.setRemoteDescription = jest.fn((obj) => {});
 
@@ -27,8 +27,8 @@ describe('new WebRtcSession', () => {
     test('It sets message handlers on the signaller', () => {
         let webRtcSession = new WebRtcSession(mockStream, mockSignaller, options);
 
-        expect(mockSignaller.setHandler.mock.calls.length).toBe(5);
-        expect(mockSignaller.setHandler.mock.calls).toEqual(expect.arrayContaining(
+        expect(mockSignaller.addHandler.mock.calls.length).toBe(5);
+        expect(mockSignaller.addHandler.mock.calls).toEqual(expect.arrayContaining(
             [
                 ["answer", expect.any(Function)],
                 ["offer", expect.any(Function)],
@@ -284,6 +284,13 @@ describe('WebRtcSession.getStats', () => {
         let promise = webRtcSession.getStats(mockPeer.id);
         let checkPromise = function(stats) {
             expect(stats).toBe('stats');
+        };
+        return promise.then(checkPromise);
+    });
+    test('When a peer is not found it returns null', () => {
+        let promise = webRtcSession.getStats("bad id");
+        let checkPromise = function(stats) {
+            expect(stats).toBe(null);
         };
         return promise.then(checkPromise);
     });

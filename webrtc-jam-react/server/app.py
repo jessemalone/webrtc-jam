@@ -16,11 +16,14 @@ async def dispatch(websocket, path):
     try:
         async for json_message in websocket:
             message = Message.from_json(json_message)
-            if (message.type == "announce"):
+            if (message.type in ["announce"]):
                 message_handler.add_client(client)
                 await message_handler.broadcast(client, message)
             elif (message.type in ["offer","answer","ice"]):
                 await message_handler.send(client, message)
+            elif (message.type in ["name"]):
+                await message_handler.broadcast(client, message)
+
     finally:
         message_handler.remove_client(client)
 

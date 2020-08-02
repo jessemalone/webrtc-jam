@@ -24,7 +24,7 @@ class TrackLatency extends React.Component {
 
     render() {
         return (
-            <div className="track-latency">{ this.latency }</div>
+            <div className="track-latency">Network Latency: { this.latency } (s)</div>
         );
     }
 }

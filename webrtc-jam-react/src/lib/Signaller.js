@@ -2,11 +2,12 @@ import {Message} from './Message'
 
 function Signaller(websocket) {
     this.websocket = websocket;
-    this.offerHandler = function(){};
-    this.answerHandler = function(){};
-    this.announceHandler = function(){};
-    this.iceHandler = function(){};
-    this.hangupHandler = function(){};
+    this.offerHandlers = [];
+    this.answerHandlers = [];
+    this.announceHandlers = [];
+    this.iceHandlers = [];
+    this.hangupHandlers = [];
+    this.nameHandlers = [];
     this.websocket.onmessage = (event) => this.messageHandler(event);
 }
 
@@ -15,19 +16,34 @@ Signaller.prototype.messageHandler = function(event) {
     let message = new Message(data.type, data.data, data.sender_guid, data.receiver_guid)
     switch (message.type) {
         case 'offer':
-            this.offerHandler(message);
+            this.offerHandlers.forEach((handler) => {
+                handler(message);
+            });
             break;
         case 'answer':
-            this.answerHandler(message);
+            this.answerHandlers.forEach((handler) => {
+                handler(message);
+            });
             break;
         case 'announce':
-            this.announceHandler(message);
+            this.announceHandlers.forEach((handler) => {
+                handler(message);
+            });
             break;
         case 'ice':
-            this.iceHandler(message);
+            this.iceHandlers.forEach((handler) => {
+                handler(message);
+            });
             break;
         case 'hangup':
-            this.hangupHandler(message);
+            this.hangupHandlers.forEach((handler) => {
+                handler(message);
+            });
+            break;
+        case 'name':
+            this.nameHandlers.forEach((handler) => {
+                handler(message);
+            });
             break;
         default:
     }
@@ -39,22 +55,25 @@ Signaller.prototype.announce = function() {
     this.websocket.send(JSON.stringify(message));
 }
 
-Signaller.prototype.setHandler = function(type, handler) {
+Signaller.prototype.addHandler = function(type, handler) {
     switch(type) {
         case "offer":
-            this.offerHandler = handler;
+            this.offerHandlers.push(handler);
             break;
         case "answer":
-            this.answerHandler = handler;
+            this.answerHandlers.push(handler);
             break;
         case "announce":
-            this.announceHandler = handler;
+            this.announceHandlers.push(handler);
             break;
         case "ice":
-            this.iceHandler = handler;
+            this.iceHandlers.push(handler);
             break;
         case "hangup":
-            this.hangupHandler = handler;
+            this.hangupHandlers.push(handler);
+            break;
+        case "name":
+            this.nameHandlers.push(handler);
             break;
         default:
     }

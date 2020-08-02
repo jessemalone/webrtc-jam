@@ -45,14 +45,16 @@ class Track extends React.Component {
         }
     }
 
+    updateTrackName = (message) => {
+        let streams = this.state.streams;
+        let stream = streams.find( stream => stream.peerId === message.sender_guid);
+    }
+
     render() {
         console.log("rendered");
         return (
             <GridContainer alignItems="center">
-                <GridItem xs={6}>
-                    <label className="track-label">{ this.props.name }</label>
-                </GridItem>
-                <GridItem xs={6}>
+                <GridItem xs={12}>
                     <audio ref={this.audio} />
                     <TrackControls mic="off" toggledMute={ this.toggledMute } volumeChange={ this.volumeChange } />
                 </GridItem>

@@ -10,6 +10,10 @@ body {
 }
 .track {
     margin-bottom: 30px;
+    padding: 0px 10px;
+}
+.track input {
+    padding: 13.5px 14px;
 }
 .track-latency {
     text-align: right;
