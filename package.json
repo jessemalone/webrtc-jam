@@ -1,30 +1,44 @@
 {
-    "watch": {
-        "serve": "app.py"
-    },
-    "scripts": {
-        "js:build": "webpack src/js/index.js -o public/assets/js/bundle.js",
-        "js:watch": "webpack -w src/js/index.js -o public/assets/js/bundle.js --mode=development",
-        "build": "npm run js:build",
-        "watch": "npm run js:watch",
-        "serve": "docker run -v  /home/jesse/dev/webrtc/webrtc-jam:/app -p 8780:80 -it webrtc-jam",
-        "test": "jest"
-    },
-    "babel": {
-        "env": {
-            "test": {
-                "plugins": [
-                    "@babel/plugin-transform-modules-commonjs"
-                ]
-            }
-        }
-    },
-    "devDependencies": {
-        "@babel/plugin-transform-modules-commonjs": "^7.9.6",
-        "jest": "^24.9.0",
-        "npm-watch": "^0.6.0",
-        "webpack": "4.42.0",
-        "webpack-cli": "^3.2.1"
-    },
-    "dependencies": {}
+  "name": "webrtc-jam",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@testing-library/jest-dom": "^4.2.4",
+    "@testing-library/react": "^9.5.0",
+    "@testing-library/user-event": "^7.2.1",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "react-scripts": "3.4.1",
+    "@material-ui/core": "4.10.0",
+    "@material-ui/icons": "4.9.1",
+    "classnames": "2.2.6",
+    "history": "4.10.1",
+    "moment": "2.26.0",
+    "node-sass": "4.14.1",
+    "nouislider": "14.5.0",
+    "prop-types": "15.7.2"
+  },
+  "scripts": {
+    "start": "env REACT_APP_TURN_HOST=${TURN_HOST} REACT_APP_TURN_USERNAME=${TURN_USERNAME} REACT_APP_TURN_PASSWORD=${TURN_PASSWORD} react-scripts start",
+    "serve": "docker run -v  /home/jesse/dev/webrtc/webrtc-jam/:/app -p 8780:80 -it webrtc-jam",
+    "build": "env REACT_APP_TURN_HOST=${REACT_APP_TURN_HOST} REACT_APP_TURN_USERNAME=${REACT_APP_TURN_USERNAME} REACT_APP_TURN_PASSWORD=${REACT_APP_TURN_PASSWORD} react-scripts build",
+    "build-docker": "docker build -t webrtc-jam -f docker/Dockerfile --build-arg REACT_APP_TURN_HOST=${TURN_HOST} --build-arg REACT_APP_TURN_USERNAME=${TURN_USERNAME} --build-arg REACT_APP_TURN_PASSWORD=${TURN_PASSWORD} .",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
 }

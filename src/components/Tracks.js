@@ -149,7 +149,7 @@ class Tracks extends React.Component {
                             <Track name="Local" id="local" stream={ this.state.localStream } />
                         </GridItem>
                         <GridItem xs={6}>
-                            <TrackLatency />
+                            <div class="track-latency">Local Track</div>
                         </GridItem>
                     </GridContainer>
                 </Paper>
