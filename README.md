@@ -9,9 +9,9 @@ npm run test
 
 #### Server:
 ```
-pip3 install -r server/requirements.txt
 pushd server
-./run_tests.sh
+make install
+make test
 popd
 ```
 
@@ -32,7 +32,9 @@ It should come up at localhost:8780
 
 Requires python >= 3.7.4
 ```
-pip install -r server/requirements.txt
+pushd server
+  make install
+popd
 npm install
 ```
 

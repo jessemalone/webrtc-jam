@@ -6,6 +6,7 @@ from lib.message import Message
 sample_message = {
             "sender_guid": "client2",
             "receiver_guid": "client1",
+            "channel_id": "channel_id",
             "type": "type",
             "data": "somedata"
         }
@@ -18,6 +19,7 @@ class MessageTests(unittest.TestCase):
         message = Message(
                 sample_message["sender_guid"],
                 sample_message["receiver_guid"],
+                sample_message["channel_id"],
                 sample_message["type"],
                 sample_message["data"]
                 )

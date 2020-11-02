@@ -2,10 +2,12 @@ import uuid
 import json
 from lib.client import Client
 
-class MessageHandler:
+class Channel:
 
-    def __init__(self):
+    def __init__(self, name):
         self.clients = set()
+        self.name = name
+        self.id = uuid.uuid4().hex
     
     def add_client(self, client):
         self.clients.add(client)

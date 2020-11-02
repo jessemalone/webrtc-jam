@@ -6,7 +6,7 @@ import uuid
 from unittest.mock import patch
 from unittest.mock import MagicMock
 
-from lib.message_handler import MessageHandler
+from lib.channel import Channel
 from lib.client import Client
 from lib.message import Message
 
@@ -14,32 +14,39 @@ class AsyncMock(MagicMock):
     async def __call__(self, *args, **kwargs):
         return super(AsyncMock, self).__call__(*args, **kwargs)
 
-class MessageHandlerTests(unittest.TestCase):
+class ChannelTests(unittest.TestCase):
+    def test_init(self):
+        # It sets the channel name and assigned a uuid
+        sample_name = "test-name"
+        channel = Channel(sample_name)
+        self.assertEqual(channel.name, sample_name)
+        self.assertTrue(uuid.UUID(channel.id) != "")
+
     def test_add_client(self):
         # It adds the client and assigns a uuid address
         test_client = Client(websockets.protocol.WebSocketCommonProtocol())
-        message_handler = MessageHandler()
-        message_handler.add_client(test_client)
-        self.assertTrue(len(message_handler.clients) == 1)
+        channel = Channel("test-channel")
+        channel.add_client(test_client)
+        self.assertTrue(len(channel.clients) == 1)
 
-        client = message_handler.clients.pop()
+        client = channel.clients.pop()
         self.assertEqual(client, test_client)
 
     def test_remove_client(self):
         # It removes the client
         remaining_client = Client(websockets.protocol.WebSocketCommonProtocol(host="1"))
         removed_client = Client(websockets.protocol.WebSocketCommonProtocol(host="2"))
-        message_handler = MessageHandler()
-        message_handler.add_client(remaining_client)
-        message_handler.add_client(removed_client)
-        self.assertTrue(len(message_handler.clients) == 2)
+        channel = Channel("test-channel")
+        channel.add_client(remaining_client)
+        channel.add_client(removed_client)
+        self.assertTrue(len(channel.clients) == 2)
         
         # It removes a client
-        message_handler.remove_client(removed_client)
-        self.assertTrue(len(message_handler.clients) == 1)
+        channel.remove_client(removed_client)
+        self.assertTrue(len(channel.clients) == 1)
 
         # It removes the right client
-        actual_remaining_client = message_handler.clients.pop()
+        actual_remaining_client = channel.clients.pop()
         self.assertEqual(remaining_client, actual_remaining_client)
 
 
@@ -51,11 +58,11 @@ class MessageHandlerTests(unittest.TestCase):
         sender = Client(SenderMockWebSocket)
         receiver1 = Client(Receiver1MockWebSocket)
         receiver2 = Client(Receiver2MockWebSocket)
-        message_handler = MessageHandler()
-        message_handler.add_client(sender)
-        message_handler.add_client(receiver1)
-        message_handler.add_client(receiver2)
-        self.assertTrue(len(message_handler.clients) == 3)
+        channel = Channel("test_channel")
+        channel.add_client(sender)
+        channel.add_client(receiver1)
+        channel.add_client(receiver2)
+        self.assertTrue(len(channel.clients) == 3)
 
         # It sends a message to each client
         sample_message = Message(
@@ -63,7 +70,7 @@ class MessageHandlerTests(unittest.TestCase):
                 data= "data"
                 )
         asyncio.get_event_loop().run_until_complete(
-                message_handler.broadcast(sender, sample_message)
+                channel.broadcast(sender, sample_message)
         )
         # It called send
         Receiver1MockWebSocket.send.assert_called()
@@ -87,10 +94,10 @@ class MessageHandlerTests(unittest.TestCase):
         # Set up some clients
         sender = Client(SenderMockWebSocket)
         receiver = Client(ReceiverMockWebSocket)
-        message_handler = MessageHandler()
-        message_handler.add_client(sender)
-        message_handler.add_client(receiver)
-        self.assertTrue(len(message_handler.clients) == 2)
+        channel = Channel("test_channel")
+        channel.add_client(sender)
+        channel.add_client(receiver)
+        self.assertTrue(len(channel.clients) == 2)
 
         # It sends a message to receiver
         sample_message = Message(
@@ -99,7 +106,7 @@ class MessageHandlerTests(unittest.TestCase):
                 data = "data"
                 )
         asyncio.get_event_loop().run_until_complete(
-                message_handler.send(sender, sample_message)
+                channel.send(sender, sample_message)
         )
         # It called send
         ReceiverMockWebSocket.send.assert_called()
