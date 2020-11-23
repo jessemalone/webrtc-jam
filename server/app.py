@@ -2,10 +2,7 @@
 
 import asyncio
 import websockets
-import json
 
-from lib.client import Client
-from lib.message import Message
 from lib.dispatcher import Dispatcher
 
 dispatcher = Dispatcher()
