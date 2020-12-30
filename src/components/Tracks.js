@@ -1,6 +1,7 @@
 import React from 'react';
 
 import {Signaller} from '../lib/Signaller';
+import {SignallingContext} from '../lib/SignallingContext.js';
 import {WebRtcSession} from '../lib/WebRtcSession';
 import {Message} from '../lib/Message';
 
@@ -14,6 +15,9 @@ import TextField from '@material-ui/core/TextField';
 
 
 class Tracks extends React.Component {
+
+    static contextType = SignallingContext;
+
     options = {
         offerToReceiveAudio: 1,
     }
@@ -25,15 +29,15 @@ class Tracks extends React.Component {
             streams: [],
             stats: {},
             started: false,
+            roomId: props.roomId
         };
-        this.websocket = {};
-        this.signaller = {};
         this.name = "";
 
         this.nameFieldRef = React.createRef();
     }
 
-    componentDidMount() {
+    componentDidUpdate(prev) {
+        console.log("tracks did update");
         const mediaStreamConstraints = {
             audio: {
                 autoGainContol: false,
@@ -46,28 +50,24 @@ class Tracks extends React.Component {
         }
 
 
-        let proto = "wss://";
-        let wsUrl = proto + window.location.host + "/ws";
-        if (window.location.host === "localhost:3000") {
-            proto = "ws://";
-            wsUrl = proto +"localhost:8780/ws";
+        console.log(prev);
+        if (this.props.roomId != "" && prev.roomId == "" && this.context.websocket != null && this.context.signaller != null) {
+            //this.props.websocket.onopen = () => {
+            console.log("GET MEDIA");
+                navigator.mediaDevices.getUserMedia(mediaStreamConstraints)
+                    .then(this.webRtcSessionStarter()).catch((e) => {console.log(e)});
+            //};
         }
-        this.websocket = new WebSocket(wsUrl);
-        this.signaller = new Signaller(this.websocket);
-
-        this.websocket.onopen = () => {
-            navigator.mediaDevices.getUserMedia(mediaStreamConstraints)
-                .then(this.webRtcSessionStarter()).catch((e) => {console.log(e)});
-        };
     }
     
     webRtcSessionStarter() {
         return (stream) => {
+            console.log("starting up");
             this.setState({localStream: stream});
             this.webRtcSession = 
                 new WebRtcSession(
                     this.state.localStream,
-                    this.signaller,
+                    this.context.signaller,
                     this.options
                 );
 
@@ -77,7 +77,7 @@ class Tracks extends React.Component {
 
             // ==================================================================//  
             // ** START **
-            this.signaller.announce();
+            this.context.signaller.announce();
             this.startStatsReporting();
 
             this.setState({started: true});
@@ -106,9 +106,11 @@ class Tracks extends React.Component {
     startStatsReporting() {
         let that = this;
         setInterval(() => {
-            if (this.signaller) {
-                this.signaller.send(new Message("name",{"name": this.name},"",""));
-        }
+            if (this.context.signaller) {
+                // TODO: If we need to be regularly broadcasting the name, it should get moved out of
+                // stats reporting
+                this.context.signaller.send(new Message("name",{"name": this.name},"",""));
+            }
             for (let i in that.state.streams) {
                 // find the audio track
                 let stream = that.state.streams[i];
@@ -126,8 +128,8 @@ class Tracks extends React.Component {
             return;
         }
 
-        if (this.signaller) {
-           this.signaller.send(new Message("name",{"name": event.target.value},"",""));
+        if (this.context.signaller) {
+           this.context.signaller.send(new Message("name",{"name": event.target.value},"",""));
         }
         this.name = event.target.value;
 
@@ -149,7 +151,7 @@ class Tracks extends React.Component {
                             <Track name="Local" id="local" stream={ this.state.localStream } />
                         </GridItem>
                         <GridItem xs={6}>
-                            <div class="track-latency">Local Track</div>
+                            <div className="track-latency">Local Track</div>
                         </GridItem>
                     </GridContainer>
                 </Paper>
@@ -157,7 +159,7 @@ class Tracks extends React.Component {
                     <Paper className="remote-track track">
                         <GridContainer alignItems="center">
                             <GridItem xs={2}>
-                                <TrackName peerId={stream.peerId} signaller={ this.signaller } />
+                                <TrackName peerId={stream.peerId} />
                             </GridItem>
                             <GridItem xs={4}>
                                 <Track id={stream.peerId} name={stream.peerId} stream={stream.stream}  />
@@ -172,5 +174,4 @@ class Tracks extends React.Component {
         );
     }
 }
-
 export default Tracks;

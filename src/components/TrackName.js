@@ -1,13 +1,16 @@
 import React from 'react';
 
+import {SignallingContext} from '../lib/SignallingContext.js';
+
 class TrackName extends React.Component {
+    static contextType = SignallingContext
 
     state = {
         name: "Anonymous"
     };
 
     componentDidMount() {
-       this.props.signaller.addHandler("name", this.updateTrackName);
+       this.context.signaller.addHandler("name", this.updateTrackName);
     }
 
     updateTrackName = (message) => {
