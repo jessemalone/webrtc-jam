@@ -80,8 +80,10 @@ class ChannelTests(unittest.TestCase):
         sent_message = Message.from_json(Receiver1MockWebSocket.send.call_args[0][0])
         sent_data = sent_message.data
         sent_type = sent_message.type
+        sent_channel_id = sent_message.channel_id
         self.assertEqual(sent_data, sample_message.data)
         self.assertEqual(sent_type, sample_message.type)
+        self.assertEqual(sent_channel_id, channel.id)
 
         # It set the "sender_guid"
         sent_from = sent_message.sender_guid

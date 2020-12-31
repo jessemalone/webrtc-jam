@@ -1,2 +1,5 @@
 websockets
 asyncio
+flask
+flask_cors
+gevent

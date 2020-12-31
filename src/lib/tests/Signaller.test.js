@@ -11,9 +11,9 @@ beforeEach(() => {
 });
 
 test('Signaller.announce sends a message with type "announce"', () => {
-    let expected_message = JSON.stringify(new Message("announce","announce","",""));
+    let expected_message = JSON.stringify(new Message("announce","announce","","","expected_channel"));
 
-    signaller.announce();
+    signaller.announce("expected_channel");
     expect(mockSocket.send.mock.calls.length).toBe(1);
     expect(mockSocket.send.mock.calls[0][0]).toBe(expected_message);
 });
@@ -45,9 +45,10 @@ test('Signaller.addHandler calls the right handler', () => {
     let ice_message = new Message("ice", data, expected_sender, expected_receiver);
     let hangup_message = new Message("hangup", data, expected_sender, expected_receiver);
     let name_message = new Message("name", data, expected_sender, expected_receiver);
+    let ack_message = new Message("ack", data, expected_sender, expected_receiver);
 
     // It calls the right handler for the message type
-    const sample_messages = [name_message, hangup_message, offer_message, ice_message, answer_message, announce_message]
+    const sample_messages = [ack_message, name_message, hangup_message, offer_message, ice_message, answer_message, announce_message]
     for (const i in sample_messages) {
         jest.clearAllMocks();
         var sample_message = sample_messages[i]

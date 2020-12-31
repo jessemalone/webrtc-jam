@@ -1,5 +1,6 @@
 body {
     background: #334;
+    color: white;
 }
 .App {
   text-align: left;
@@ -30,15 +31,20 @@ body {
   }
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 10vmin;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+
+.MuiAppBar-root .MuiOutlinedInput-root.Mui-disabled,
+.MuiAppBar-root .MuiFilledInput-root.Mui-disabled {
+ background-color: #fff;
+}
+.MuiAppBar-root .MuiInputBase-input {
+    padding: 13.5px 14px;
+  }
+
+.MuiAppBar-root span.centered, 
+.MuiAppBar-root span.centered svg {
+  line-height: 44px;
+  vertical-align: middle;
+  color: #fff;
 }
 
 .App-link {

@@ -8,12 +8,13 @@ function Signaller(websocket) {
     this.iceHandlers = [];
     this.hangupHandlers = [];
     this.nameHandlers = [];
+    this.ackHandlers = [];
     this.websocket.onmessage = (event) => this.messageHandler(event);
 }
 
 Signaller.prototype.messageHandler = function(event) {
     let data = JSON.parse(event.data)
-    let message = new Message(data.type, data.data, data.sender_guid, data.receiver_guid)
+    let message = new Message(data.type, data.data, data.sender_guid, data.receiver_guid,data.channel_id)
     switch (message.type) {
         case 'offer':
             this.offerHandlers.forEach((handler) => {
@@ -45,13 +46,18 @@ Signaller.prototype.messageHandler = function(event) {
                 handler(message);
             });
             break;
+        case 'ack':
+            this.ackHandlers.forEach((handler) => {
+                handler(message);
+            });
+            break;
         default:
     }
 }
 
-Signaller.prototype.announce = function() {
+Signaller.prototype.announce = function(channelId) {
     console.log("send announce!");
-    let message = new Message("announce","announce","","");
+    let message = new Message("announce","announce","","",channelId);
     this.websocket.send(JSON.stringify(message));
 }
 
@@ -74,6 +80,9 @@ Signaller.prototype.addHandler = function(type, handler) {
             break;
         case "name":
             this.nameHandlers.push(handler);
+            break;
+        case "ack":
+            this.ackHandlers.push(handler);
             break;
         default:
     }

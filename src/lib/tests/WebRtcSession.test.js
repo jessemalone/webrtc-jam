@@ -8,6 +8,7 @@ let mockPeerConnection;
 let mockSignaller;
 let mockStream;
 let options = {};
+let sessionRoomId = 'sessionroomid'
 
 beforeEach(() => {
     mockPeerConnection = {};
@@ -25,7 +26,7 @@ beforeEach(() => {
 
 describe('new WebRtcSession', () => {
     test('It sets message handlers on the signaller', () => {
-        let webRtcSession = new WebRtcSession(mockStream, mockSignaller, options);
+        let webRtcSession = new WebRtcSession(sessionRoomId,mockStream, mockSignaller, options);
 
         expect(mockSignaller.addHandler.mock.calls.length).toBe(5);
         expect(mockSignaller.addHandler.mock.calls).toEqual(expect.arrayContaining(
@@ -45,10 +46,10 @@ describe('WebRtcSession.answerHandler', () => {
     let message;
     let expected_data;
     beforeEach(() => {
-        webRtcSession = new WebRtcSession(mockStream, mockSignaller, options);
+        webRtcSession = new WebRtcSession(sessionRoomId,mockStream, mockSignaller, options);
         webRtcSession.peerConnections = peerConnections;
         expected_data = 'sdp';
-        message = new Message('answer',expected_data,'sender','receiver');
+        message = new Message('answer',expected_data,'sender','receiver','roomid');
     });
     test('It sets the remote description on the right peer connection', () => {
         let handler = webRtcSession.getAnswerHandler();
@@ -76,10 +77,10 @@ describe('WebRtcSession.offerHandler', () => {
     let expected_data;
     let mockAnswerPromise;
     beforeEach(() => {
-        webRtcSession = new WebRtcSession(mockStream, mockSignaller, options);
+        webRtcSession = new WebRtcSession(sessionRoomId,mockStream, mockSignaller, options);
         webRtcSession.peerConnections = peerConnections;
         expected_data = 'sdp';
-        message = new Message('offer',expected_data,'sender','receiver');
+        message = new Message('offer',expected_data,'sender','receiver',sessionRoomId);
 
         // Set up createPeer to return a mock peerConnections
         // with a mock implementation of addStream
@@ -123,7 +124,7 @@ describe('WebRtcSession.offerHandler', () => {
         let handler = webRtcSession.getOfferHandler();
         handler(message);
         
-        let expected_message = new Message("answer","answer","", message.sender_guid);
+        let expected_message = new Message("answer","answer","", message.sender_guid,sessionRoomId);
         let checkPromise = function() {
             expect(mockSignaller.send.mock.calls.length).toBe(1);
             expect(mockSignaller.send.mock.calls[0][0]).toMatchObject(expected_message);
@@ -159,8 +160,8 @@ describe('WebRtcSession.announceHandler', () => {
     let mockOfferPromise;
     let expected_offer = 'offer';
     beforeEach(() => {
-        message = new Message('announce',"",'sender','receiver');
-        webRtcSession = new WebRtcSession(mockStream, mockSignaller, options);
+        message = new Message('announce',"",'sender','receiver',sessionRoomId);
+        webRtcSession = new WebRtcSession(sessionRoomId,mockStream, mockSignaller, options);
         webRtcSession.peerConnections = peerConnections;
 
         // Set up createPeer to return a mock peerConnections
@@ -190,7 +191,7 @@ describe('WebRtcSession.announceHandler', () => {
         let handler = webRtcSession.getAnnounceHandler();
         handler(message);
         
-        let expected_message = new Message("offer",expected_offer,"", message.sender_guid);
+        let expected_message = new Message("offer",expected_offer,"", message.sender_guid,sessionRoomId);
         let checkPromise = function() {
             expect(mockSignaller.send.mock.calls.length).toBe(1);
             expect(mockSignaller.send.mock.calls[0][0]).toMatchObject(expected_message);
@@ -201,7 +202,7 @@ describe('WebRtcSession.announceHandler', () => {
         let handler = webRtcSession.getAnnounceHandler();
         handler(message);
         
-        let expected_message = new Message("offer",expected_offer,"", message.sender_guid);
+        let expected_message = new Message("offer",expected_offer,"", message.sender_guid,sessionRoomId);
         let checkPromise = function() {
             expect(mockPeerConnection.setLocalDescription.mock.calls.length).toBe(1);
             expect(mockPeerConnection.setLocalDescription.mock.calls[0][0]).toBe(expected_offer);
@@ -215,7 +216,7 @@ describe('WebRtcSession.handleIceCandidate', () => {
     let message;
     let expected_candidate = 'candidate';
     beforeEach(() => {
-        message = new Message('ice',expected_candidate,'sender','receiver');
+        message = new Message('ice',expected_candidate,'sender','receiver',sessionRoomId);
         mockPeerConnection = {
             addIceCandidate: jest.fn((obj) => {})
         }
@@ -224,7 +225,7 @@ describe('WebRtcSession.handleIceCandidate', () => {
             new Peer('another', {})
         ];
 
-        webRtcSession = new WebRtcSession(mockStream, mockSignaller, options);
+        webRtcSession = new WebRtcSession(sessionRoomId,mockStream, mockSignaller, options);
         webRtcSession.createRTCIceCandidate = jest.fn((obj) => {return obj});
         webRtcSession.peerConnections = peerConnections;
 
@@ -242,10 +243,10 @@ describe('WebRtcSession.handleHangup', () => {
     let message;
     let mockPeer;
     beforeEach(() => {
-        message = new Message('hangup','','sender','receiver');
+        message = new Message('hangup','','sender','receiver',sessionRoomId);
         mockPeer = peerConnections[0]
         mockPeer.connection.close = jest.fn((obj) => {});
-        webRtcSession = new WebRtcSession(mockStream, mockSignaller, options);
+        webRtcSession = new WebRtcSession(sessionRoomId,mockStream, mockSignaller, options);
         webRtcSession.peerConnections = peerConnections;
     });
     test('It calls onhangup with the right peer id', () => {
@@ -277,7 +278,7 @@ describe('WebRtcSession.getStats', () => {
         mockPeer.connection.getStats = jest.fn((obj) => {
             return mockStatsPromise;
         });
-        webRtcSession = new WebRtcSession(mockStream, mockSignaller, options);
+        webRtcSession = new WebRtcSession(sessionRoomId,mockStream, mockSignaller, options);
         webRtcSession.peerConnections = peerConnections;
     });
     test('It returns a promise with the stats object', () => {

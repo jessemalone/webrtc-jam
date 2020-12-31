@@ -1,11 +1,12 @@
 import {Message} from './Message'
 import {Peer} from './Peer'
 
-function WebRtcSession(stream, signaller, options) {
+function WebRtcSession(channelId, stream, signaller, options) {
     this.signaller = signaller;
     this.localStream = stream;
     this.peerConnections = [];
     this.options = options;
+    this.channelId = channelId;
 
     this.signaller.addHandler("answer", this.getAnswerHandler());
     this.signaller.addHandler("offer", this.getOfferHandler());
@@ -53,7 +54,8 @@ WebRtcSession.prototype.getOfferHandler = function() {
         let newPeerConnection = that.createPeer(function(event) {
             // TODO: this should be implicit in createPeer
             console.log("offer sending ICE");
-            that.signaller.send(new Message("ice",event.candidate,"",message.sender_guid));
+            console.log("FFFFFFFFFFFFFFFFFFFFFFF");
+            that.signaller.send(new Message("ice",event.candidate,"",message.sender_guid,that.channelId));
         });
 
         // Add the local stream
@@ -66,7 +68,7 @@ WebRtcSession.prototype.getOfferHandler = function() {
         newPeerConnection.createAnswer().then(function(answer) {
             console.log("sending answer");
             newPeerConnection.setLocalDescription(answer);
-            that.signaller.send(new Message("answer",answer,"",message.sender_guid));
+            that.signaller.send(new Message("answer",answer,"",message.sender_guid,that.channelId));
         });
 
         // Set up remote stream handler
@@ -85,7 +87,7 @@ WebRtcSession.prototype.getAnnounceHandler = function() {
         // Create peer connection
         let newPeerConnection = that.createPeer(function(event) {
             console.log("announce sending ICE");
-            that.signaller.send(new Message("ice",event.candidate,"",message.sender_guid))
+            that.signaller.send(new Message("ice",event.candidate,"",message.sender_guid,that.channelId))
         });
 
         // Add local stream to the connection
@@ -95,7 +97,7 @@ WebRtcSession.prototype.getAnnounceHandler = function() {
         newPeerConnection.createOffer(that.options)
             .then(function(offer){
                 newPeerConnection.setLocalDescription(offer);
-                that.signaller.send(new Message("offer",offer,"",message.sender_guid));
+                that.signaller.send(new Message("offer",offer,"",message.sender_guid,that.channelId));
             });
 
         // Add the peer to the peer list

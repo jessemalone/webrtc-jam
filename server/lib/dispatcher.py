@@ -18,7 +18,6 @@ class Dispatcher:
                 message = Message.from_json(json_message)
                 if message.type == "create_channel":
                     new_channel = Channel(message.data["name"])
-                    new_channel.clients.add(client)
                     self.channels[new_channel.id] = new_channel
                     ack = Message(type="ack", data={"channel_id": new_channel.id})
                     await websocket.send(ack.to_json())

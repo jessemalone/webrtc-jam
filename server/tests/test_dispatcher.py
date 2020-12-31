@@ -67,9 +67,6 @@ class DispatcherTests(unittest.TestCase):
                 break
         self.assertTrue(found)
 
-        # It adds the sender to the channel
-        self.assertEqual(list(new_channel.clients)[0].websocket, self.sender.websocket)
-
         # It sends an 'ack' with the channel id
         self.sender_mock_socket.send.assert_called()
         sent_message = Message.from_json(self.sender_mock_socket.send.call_args_list[0][0][0])

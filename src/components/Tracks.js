@@ -1,6 +1,5 @@
 import React from 'react';
 
-import {Signaller} from '../lib/Signaller';
 import {SignallingContext} from '../lib/SignallingContext.js';
 import {WebRtcSession} from '../lib/WebRtcSession';
 import {Message} from '../lib/Message';
@@ -28,16 +27,17 @@ class Tracks extends React.Component {
             localStream: null,
             streams: [],
             stats: {},
-            started: false,
-            roomId: props.roomId
+            started: false
         };
         this.name = "";
 
         this.nameFieldRef = React.createRef();
     }
 
-    componentDidUpdate(prev) {
-        console.log("tracks did update");
+    componentDidMount() {
+        console.log("tracks did mount");
+        console.log(this.props.match.params);
+        this.setState({roomId: this.props.match.params.roomid});
         const mediaStreamConstraints = {
             audio: {
                 autoGainContol: false,
@@ -50,13 +50,13 @@ class Tracks extends React.Component {
         }
 
 
-        console.log(prev);
-        if (this.props.roomId != "" && prev.roomId == "" && this.context.websocket != null && this.context.signaller != null) {
-            //this.props.websocket.onopen = () => {
+        // TODO: This sucks, do it better, but not now
+        console.log(this.context);
+        if (this.context.websocket !== null && this.context.signaller !== null) {
             console.log("GET MEDIA");
-                navigator.mediaDevices.getUserMedia(mediaStreamConstraints)
-                    .then(this.webRtcSessionStarter()).catch((e) => {console.log(e)});
-            //};
+            
+            navigator.mediaDevices.getUserMedia(mediaStreamConstraints)
+                .then(this.webRtcSessionStarter()).catch((e) => {console.log(e)});
         }
     }
     
@@ -66,6 +66,7 @@ class Tracks extends React.Component {
             this.setState({localStream: stream});
             this.webRtcSession = 
                 new WebRtcSession(
+                    this.state.roomId,
                     this.state.localStream,
                     this.context.signaller,
                     this.options
@@ -77,7 +78,8 @@ class Tracks extends React.Component {
 
             // ==================================================================//  
             // ** START **
-            this.context.signaller.announce();
+            this.context.signaller.announce(this.state.roomId);
+            console.log("DEBUG sent announce");
             this.startStatsReporting();
 
             this.setState({started: true});
@@ -109,7 +111,7 @@ class Tracks extends React.Component {
             if (this.context.signaller) {
                 // TODO: If we need to be regularly broadcasting the name, it should get moved out of
                 // stats reporting
-                this.context.signaller.send(new Message("name",{"name": this.name},"",""));
+                this.context.signaller.send(new Message("name",{"name": this.name},"","",this.state.roomId));
             }
             for (let i in that.state.streams) {
                 // find the audio track
@@ -124,12 +126,12 @@ class Tracks extends React.Component {
     }
 
     setName = (event) => {
-        if (event.key && event.key != 'Enter') {
+        if (event.key && event.key !== 'Enter') {
             return;
         }
 
         if (this.context.signaller) {
-           this.context.signaller.send(new Message("name",{"name": event.target.value},"",""));
+           this.context.signaller.send(new Message("name",{"name": event.target.value},"","",this.state.roomId));
         }
         this.name = event.target.value;
 
