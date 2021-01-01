@@ -35,6 +35,11 @@ if (window.location.host === "localhost:3000") {
     wsUrl = proto +"localhost:8765/ws";
     apiUrl = "http://" + "localhost:5000" + "/api"
 }
+if (window.location.host === "localhost:8780") {
+    proto = "ws://";
+    wsUrl = proto +"localhost:8780/ws";
+    apiUrl = "http://" + "localhost:8780" + "/api"
+}
 let websocket = new WebSocket(wsUrl);
 let signaller = new Signaller(websocket);
 

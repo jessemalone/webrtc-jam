@@ -21,9 +21,9 @@
   },
   "scripts": {
     "start": "env REACT_APP_TURN_HOST=${TURN_HOST} REACT_APP_TURN_USERNAME=${TURN_USERNAME} REACT_APP_TURN_PASSWORD=${TURN_PASSWORD} react-scripts start",
-    "serve": "docker run -v  /home/jesse/dev/webrtc/webrtc-jam/:/app -p 8780:80 -it webrtc-jam",
+    "serve": "env  docker run -v  /home/jesse/dev/webrtc/webrtc-jam/:/app/ -e REACT_APP_TURN_HOST=${TURN_HOST} -e REACT_APP_TURN_USERNAME=${TURN_USERNAME} -e REACT_APP_TURN_PASSWORD=${TURN_PASSWORD} -p 8780:80 -it webrtc-jam",
     "build": "env REACT_APP_TURN_HOST=${REACT_APP_TURN_HOST} REACT_APP_TURN_USERNAME=${REACT_APP_TURN_USERNAME} REACT_APP_TURN_PASSWORD=${REACT_APP_TURN_PASSWORD} react-scripts build",
-    "build-docker": "docker build -t webrtc-jam -f docker/Dockerfile --build-arg REACT_APP_TURN_HOST=${TURN_HOST} --build-arg REACT_APP_TURN_USERNAME=${TURN_USERNAME} --build-arg REACT_APP_TURN_PASSWORD=${TURN_PASSWORD} .",
+    "build-docker": "docker build -t webrtc-jam -f docker/Dockerfile .",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

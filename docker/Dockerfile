@@ -223,11 +223,6 @@ RUN chmod -R 777 /app
 RUN /usr/local/bin/pip install -r /app/server/requirements.txt
 RUN cd /app/server/; ./run_tests.sh; cd ../..;
 
-ARG REACT_APP_TURN_HOST=${REACT_APP_TURN_HOST}
-RUN echo "TURN host set to ${REACT_APP_TURN_HOST}"
-ARG REACT_APP_TURN_USERNAME=${REACT_APP_TURN_USERNAME}
-ARG REACT_APP_TURN_PASSWORD=${REACT_APP_TURN_PASSWORD}
-
 RUN cd /app/; npm install; npm test -- --watchAll=false; cd ..;
 RUN cd /app/; npm run build; cd ..;
 
