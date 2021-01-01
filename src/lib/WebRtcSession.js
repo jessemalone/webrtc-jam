@@ -54,7 +54,6 @@ WebRtcSession.prototype.getOfferHandler = function() {
         let newPeerConnection = that.createPeer(function(event) {
             // TODO: this should be implicit in createPeer
             console.log("offer sending ICE");
-            console.log("FFFFFFFFFFFFFFFFFFFFFFF");
             that.signaller.send(new Message("ice",event.candidate,"",message.sender_guid,that.channelId));
         });
 
@@ -140,8 +139,8 @@ WebRtcSession.prototype.getHangupHandler = function() {
 
 // TODO: This needs tests, and iceCandidateHandler should no longer be passed in
 WebRtcSession.prototype.createPeer = function(iceCandidateHandler) {
-    console.log("ENV");
-    console.log(process.env);
+    //console.log("ENV");
+    //console.log(process.env);
     const config = {
         iceServers: [
             {urls: ["stun:stun1.l.google.com:19302"]},
