@@ -1,0 +1,80 @@
+resources:
+  - name: webrtc-jam
+    type: git
+    source:
+      uri: git@github.com:jessemalone/webrtc-jam.git
+      branch: ci
+      private_key: "((webrtcjam-deploykey))"
+  - name: webrtcjam-build-image
+    type: docker-image
+    source:
+      repository: jessemalone/webrtcjam-build
+      username: "jessemalone"
+      password: "((dockerhub-token))"
+jobs:
+  - name: build-image
+    public: true
+    plan:
+      - get: webrtc-jam
+        trigger: true
+      - put: webrtcjam-build-image
+        params:
+          build: webrtc-jam/docker/build-env/
+          tag_file: webrtc-jam/.git/ref
+  - name: test-image
+    public: true
+    plan:
+      - get: webrtc-jam
+        trigger: true
+        passed: [build-image]
+      - load_var: build-tag
+        file: webrtc-jam/.git/ref
+        reveal: true
+      - task: test-js
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: jessemalone/webrtcjam-build
+              tag: ((.:build-tag))
+          inputs:
+            - name: webrtc-jam
+          run:
+            path: /bin/bash
+            args:
+            - -c
+            - |
+              cd webrtc-jam
+              npm install
+              npm test -- --watchAll=false
+              npm run build
+      - task: test-server
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: jessemalone/webrtcjam-build
+              tag: ((.:build-tag))
+          inputs:
+            - name: webrtc-jam
+          run:
+            path: /bin/bash
+            args:
+            - -c
+            - |
+              cd webrtc-jam/server
+              make install
+              make test
+  - name: publish-image
+    public: true
+    plan:
+      - get: webrtc-jam
+        passed: [test-image]
+        trigger: true
+      - put: webrtcjam-build-image
+        params:
+          build: webrtc-jam/docker/build-env/
+          tag_file: webrtc-jam/.git/ref
+          tag_as_latest: true
