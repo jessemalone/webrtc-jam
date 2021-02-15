@@ -3,7 +3,7 @@ resources:
     type: git
     source:
       uri: git@github.com:jessemalone/webrtc-jam.git
-      branch: ci
+      branch: master
       private_key: "((webrtcjam-deploykey))"
   - name: webrtcjam-build-image
     type: docker-image
