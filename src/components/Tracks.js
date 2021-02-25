@@ -50,8 +50,9 @@ class Tracks extends React.Component {
         }
 
 
-        // TODO: This sucks, do it better, but not now
-        console.log(this.context);
+        // TODO: This could be better. Find a better way
+        //       to signal that the signaller and websocket are 
+        //       ready and the local stream can start.
         if (this.context.websocket !== null && this.context.signaller !== null) {
             console.log("GET MEDIA");
             

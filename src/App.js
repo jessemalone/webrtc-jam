@@ -45,7 +45,6 @@ let signaller = new Signaller(websocket);
 
 class App extends React.Component {
 
-    // YOU ARE HERE: Use "Context" to pass around websocket and signaller
     constructor(props) {
         super(props);
 
