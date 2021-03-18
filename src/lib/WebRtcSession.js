@@ -57,6 +57,7 @@ WebRtcSession.prototype.getOfferHandler = function() {
             that.signaller.send(new Message("ice",event.candidate,"",message.sender_guid,that.channelId));
         });
 
+        // TODO: This is where the data channel would go?
         // Add the local stream
         // (This needs to be added before creating and sending answer)
         // TODO: Replace with addTrack - addStream is deprecated
