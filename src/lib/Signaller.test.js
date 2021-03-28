@@ -1,5 +1,5 @@
-import {Signaller} from '../Signaller'
-import {Message} from '../Message'
+import {Signaller} from './Signaller'
+import {Message} from './Message'
 
 let signaller;
 let mockSocket;

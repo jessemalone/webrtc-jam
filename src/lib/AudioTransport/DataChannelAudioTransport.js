@@ -5,9 +5,11 @@ function DataChannelAudioTransport(peerConnection, audioSender, audioReceiver) {
     this.peerConnection = peerConnection;
     this.audioSender = audioSender;
     this.audioReceiver = audioReceiver;
-}
 
-DataChannelAudioTransport.prototype.addStreamHandler = (callback) => {
+    this.mediaStreamDestination = this.audioReceiver.getMediaStreamDestination();
+};
+
+DataChannelAudioTransport.prototype.addStreamHandler = function(callback) {
     // add listener for datachannel event
     //
     // On datachannel
@@ -20,9 +22,14 @@ DataChannelAudioTransport.prototype.addStreamHandler = (callback) => {
     //        and onto the output
     //      call the callback, passing in the mediaStreamDestination
 
+    this.peerConnection.ondatachannel = (event) => {
+	event.channel.onmessage = (event) => this.handleMessage(event);
+    };
+
+    callback(this.mediaStreamDestination);
 };
 
-DataChannelAudioTransport.prototype.addStream = (mediaStreamSource) => {
+DataChannelAudioTransport.prototype.addStream = function(mediaStreamSource) {
     // create shared buffer
     // create data channelk
     // start audio worklet
@@ -31,3 +38,8 @@ DataChannelAudioTransport.prototype.addStream = (mediaStreamSource) => {
 
 };
 
+DataChannelAudioTransport.prototype.handleMessage = function(message) {
+    this.audioReceiver.receiveAudioSamples(message.data);
+};
+
+export {DataChannelAudioTransport}
