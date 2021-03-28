@@ -1,7 +1,7 @@
-import {Signaller} from '../Signaller'
-import {Message} from '../Message'
-import {WebRtcSession} from '../WebRtcSession'
-import {Peer} from '../Peer'
+import {Signaller} from './Signaller'
+import {Message} from './Message'
+import {WebRtcSession} from './WebRtcSession'
+import {Peer} from './Peer'
 
 let peerConnections;
 let mockPeerConnection;
