@@ -8,7 +8,7 @@ let mockAudioContext;
 let mockMediaStreamSource = "expected MediaStreamSource";
 let mockMediaStreamDestination = "expected MediaStreamDestination";
 let workletProcessorPromise = Promise.resolve("unused");
-global.AudioWorkletNode = jest.fn((a,b) => {});
+let mockAudioWorkletNode
 
 let audioReceiver;
 let audioSender;
@@ -38,6 +38,20 @@ beforeEach(() => {
         audioSender,
         audioReceiver
     );
+
+    // Mock the global AudioWorkletNode to return a mock
+    // TODO: This mock now occurs in two test suites, find a way
+    //       to eliminate the duplication. Maybe mock AudioReceiver
+    //       in this suite 
+    mockAudioWorkletNode = {
+	connect: jest.fn((node) =>{return true;}),
+	port: {
+	    postMessage: jest.fn((msg) => {})
+	}
+    };
+    global.AudioWorkletNode = function(context, processorName) {
+	return mockAudioWorkletNode;
+    };
 });
 
 test('DataChannelAudioTransport.addStreamHandler sends messages from the data channel to the audioReceiver', () => {
