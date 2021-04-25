@@ -13,13 +13,7 @@ DataChannelAudioTransport.prototype.addStreamHandler = function(callback) {
     // add listener for datachannel event
     //
     // On datachannel
-    //      create shared buffer
-    //      create mediaStreamDestination
-    //      create audio worklet
-    //      pass buffer to worklet
-    //      connect worklet to the stream
-    //      in the worklet pull audio from the buffer
-    //        and onto the output
+    //      setup datachannel event handling, passing data to the audioReceiver
     //      call the callback, passing in the mediaStreamDestination
 
     this.peerConnection.ondatachannel = (event) => {
@@ -29,17 +23,17 @@ DataChannelAudioTransport.prototype.addStreamHandler = function(callback) {
     callback(this.mediaStreamDestination);
 };
 
-DataChannelAudioTransport.prototype.addStream = function(mediaStreamSource) {
-    // create shared buffer
-    // create data channelk
-    // start audio worklet
-    // connect stream to audio worklet
-    // pull audio from the buffer and send to data channel
-
+// pass the stream to the audioSender, send resulting data to the datachannel
+DataChannelAudioTransport.prototype.addStream = function(stream) {
+    let dataChannel = this.peerConnection.createDataChannel("stream");
+    this.audioSender.send(stream,(data) => {
+	dataChannel.send(data);
+    });
 };
 
 DataChannelAudioTransport.prototype.handleMessage = function(message) {
     this.audioReceiver.receiveAudioSamples(message.data);
 };
+
 
 export {DataChannelAudioTransport}
