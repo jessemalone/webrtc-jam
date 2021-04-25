@@ -16,7 +16,8 @@ function AudioReceiver(audioContext) {
 	    console.log(Float32Array.BYTES_PER_ELEMENT);
 	    console.log(ArrayBuffer.__proto__.isPrototypeOf(Float32Array));
 	    this.sharedBuffer = RingBuffer.getStorageForCapacity(bufferLengthInSamples, Float32Array);
-	    this.ringBuffer = new RingBuffer(this.sharedBuffer, ArrayBuffer);
+	    this.ringBuffer = new RingBuffer(this.sharedBuffer, Float32Array);
+	    this.audioWriter = new AudioWriter(this.ringBuffer);
 	    // initialize audio worklet processor
 	    worklet.port.postMessage({
 		type: "receive-buffer",
@@ -30,6 +31,7 @@ function AudioReceiver(audioContext) {
 	}
     });
 
+
 }
 
 AudioReceiver.prototype.getMediaStreamDestination = function() {
@@ -38,7 +40,9 @@ AudioReceiver.prototype.getMediaStreamDestination = function() {
 
 AudioReceiver.prototype.receiveAudioSamples = function(samples) {
     // enqueue samples to the buffer
-    
+    if (this.audioWriter.available_write() >= 128) {
+	this.audioWriter.enqueue(samples);
+    }
 }
 
 export { AudioReceiver }
