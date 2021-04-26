@@ -2,6 +2,7 @@
 class ReceiverWorkletProcessor extends AudioWorkletProcessor {
     constructor() {
         super()
+        this.initialized = false;
         this.port.onmessage = this.handleMessage.bind(this);
 	this.buf = new Float32Array(128);
     }

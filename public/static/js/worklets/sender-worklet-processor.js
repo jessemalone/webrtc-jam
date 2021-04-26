@@ -1,4 +1,3 @@
-import {AudioWriter, RingBuffer} from 'ringbuf.js'
 
 class SenderWorkletProcessor extends AudioWorkletProcessor {
     constructor() {
