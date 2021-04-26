@@ -1,5 +1,8 @@
 import {Message} from './Message'
 import {Peer} from './Peer'
+import {DataChannelAudioTransport} from './AudioTransport/DataChannelAudioTransport'
+import {AudioReceiver} from './AudioTransport/AudioReceiver'
+import {AudioSender} from './AudioTransport/AudioSender'
 
 function WebRtcSession(channelId, stream, signaller, options) {
     this.signaller = signaller;
@@ -7,6 +10,10 @@ function WebRtcSession(channelId, stream, signaller, options) {
     this.peerConnections = [];
     this.options = options;
     this.channelId = channelId;
+
+    this.ctx = new AudioContext();
+    this.audioReceiver = new AudioReceiver(this.ctx);
+    this.audioSender = new AudioSender(this.ctx);
 
     this.signaller.addHandler("answer", this.getAnswerHandler());
     this.signaller.addHandler("offer", this.getOfferHandler());
@@ -57,9 +64,7 @@ WebRtcSession.prototype.getOfferHandler = function() {
             that.signaller.send(new Message("ice",event.candidate,"",message.sender_guid,that.channelId));
         });
 
-        // TODO: This is where the data channel would go?
-        // Add the local stream
-        // (This needs to be added before creating and sending answer)
+
         // TODO: Replace with addTrack - addStream is deprecated
         newPeerConnection.addStream(that.localStream);
 
@@ -90,15 +95,21 @@ WebRtcSession.prototype.getAnnounceHandler = function() {
             that.signaller.send(new Message("ice",event.candidate,"",message.sender_guid,that.channelId))
         });
 
+        // TODO: This is where the data channel would go?
+        // Add the local stream
+        // (This needs to be added before creating and sending answer)
         // Add local stream to the connection
-        newPeerConnection.addStream(that.localStream);
+        //newPeerConnection.addStream(that.localStream);
+	let audioTransport = new DataChannelAudioTransport(newPeerConnection, that.audioSender, that.audioReceiver)
+	audioTransport.addStream(that.localStream);
+	audioTransport.addStreamHandler(that.createRemoteStreamHandlerFor(message.sender_guid));
 
         // Create offer
-        newPeerConnection.createOffer(that.options)
-            .then(function(offer){
-                newPeerConnection.setLocalDescription(offer);
-                that.signaller.send(new Message("offer",offer,"",message.sender_guid,that.channelId));
-            });
+        // newPeerConnection.createOffer(that.options)
+        //     .then(function(offer){
+        //         newPeerConnection.setLocalDescription(offer);
+        //         that.signaller.send(new Message("offer",offer,"",message.sender_guid,that.channelId));
+        //     });
 
         // Add the peer to the peer list
         let newPeer = new Peer(message.sender_guid, newPeerConnection);
