@@ -66,7 +66,7 @@ WebRtcSession.prototype.getOfferHandler = function() {
 
 
         // TODO: Replace with addTrack - addStream is deprecated
-        newPeerConnection.addStream(that.localStream);
+        //newPeerConnection.addStream(that.localStream);
 
         // set the offer and answer handler
         newPeerConnection.setRemoteDescription(offer);
@@ -77,7 +77,10 @@ WebRtcSession.prototype.getOfferHandler = function() {
         });
 
         // Set up remote stream handler
-        newPeerConnection.onaddstream = that.createRemoteStreamHandlerFor(message.sender_guid);
+        //newPeerConnection.onaddstream = that.createRemoteStreamHandlerFor(message.sender_guid);
+	let audioTransport = new DataChannelAudioTransport(newPeerConnection, that.audioSender, that.audioReceiver)
+	audioTransport.addStream(that.localStream);
+	audioTransport.addStreamHandler(that.createRemoteStreamHandlerFor(message.sender_guid));
 
         // Add to the peer list
         let newPeer = new Peer(message.sender_guid, newPeerConnection);
@@ -105,11 +108,11 @@ WebRtcSession.prototype.getAnnounceHandler = function() {
 	audioTransport.addStreamHandler(that.createRemoteStreamHandlerFor(message.sender_guid));
 
         // Create offer
-        // newPeerConnection.createOffer(that.options)
-        //     .then(function(offer){
-        //         newPeerConnection.setLocalDescription(offer);
-        //         that.signaller.send(new Message("offer",offer,"",message.sender_guid,that.channelId));
-        //     });
+         newPeerConnection.createOffer(that.options)
+             .then(function(offer){
+                 newPeerConnection.setLocalDescription(offer);
+                 that.signaller.send(new Message("offer",offer,"",message.sender_guid,that.channelId));
+             });
 
         // Add the peer to the peer list
         let newPeer = new Peer(message.sender_guid, newPeerConnection);

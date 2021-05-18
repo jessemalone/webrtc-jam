@@ -4,18 +4,18 @@
 import { AudioWriter, RingBuffer } from 'ringbuf.js';
 
 function URLFromFiles(files) {
-  const promises = files
-    .map((file) => fetch(file)
-      .then((response) => response.text()));
+    const promises = files
+	  .map((file) => fetch(file)
+	       .then((response) => response.text()));
 
-  return Promise
-    .all(promises)
-    .then((texts) => {
-      const text = texts.join('');
-      const blob = new Blob([text], {type: "application/javascript"});
+    return Promise
+	.all(promises)
+	.then((texts) => {
+	    const text = texts.join('').replace(/^.*exports.*$/mg,"");
+	    const blob = new Blob([text], {type: "application/javascript"});
 
-      return URL.createObjectURL(blob);
-    });
+	    return URL.createObjectURL(blob);
+	});
 }
 
 function AudioReceiver(audioContext) {
@@ -24,7 +24,7 @@ function AudioReceiver(audioContext) {
     this.context = audioContext;
     this.mediaStreamDestination = audioContext.createMediaStreamDestination();
 
-    URLFromFiles(['/static/js/worklets/receiver-worklet-processor.js', '/static/js/0.chunk.js']).then((u) => {
+    URLFromFiles(['/static/js/worklets/receiver-worklet-processor.js', '/static/js/ringbuf.js']).then((u) => {
 	this.context.audioWorklet.addModule(u).then((e) => {
 	    try {
 		let worklet = new AudioWorkletNode(this.context, 'receiver-worklet-processor');
@@ -58,8 +58,11 @@ AudioReceiver.prototype.getMediaStreamDestination = function() {
 
 AudioReceiver.prototype.receiveAudioSamples = function(samples) {
     // enqueue samples to the buffer
+    // (samples come in as a blob and must be converted to arraybuffer
     if (this.audioWriter.available_write() >= 128) {
-	this.audioWriter.enqueue(samples);
+	samples.arrayBuffer().then((buf) => {
+	    this.audioWriter.enqueue(new Float32Array(buf));
+	});
     }
 }
 

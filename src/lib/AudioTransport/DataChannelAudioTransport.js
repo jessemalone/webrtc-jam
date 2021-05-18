@@ -25,10 +25,16 @@ DataChannelAudioTransport.prototype.addStreamHandler = function(callback) {
 
 // pass the stream to the audioSender, send resulting data to the datachannel
 DataChannelAudioTransport.prototype.addStream = function(stream) {
+    // DUH forgot to wait for "onopen" https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/createDataChannel#examples
     let dataChannel = this.peerConnection.createDataChannel("stream");
-    this.audioSender.send(stream,(data) => {
-	dataChannel.send(data);
-    });
+    // TODO: You are here May 11, is the anonymous call back not persisted? Perhaps define the callback on the datachannel object
+    dataChannel.onopen = (e) => {
+	this.audioSender.send(stream,function(data) {
+	    console.log("DEBUG: datachannels sending");
+	    console.log(data);
+	    dataChannel.send(data);
+	});
+    };
 };
 
 DataChannelAudioTransport.prototype.handleMessage = function(message) {

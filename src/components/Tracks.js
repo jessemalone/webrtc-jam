@@ -90,6 +90,8 @@ class Tracks extends React.Component {
     getAddStreamHandler() {
         let that = this;
         return function(stream) {
+	    console.log("DEBUG: Tracks::getAddStreamHandler");
+	    console.log(stream);
             let streams = that.state.streams;
             streams.push(stream);
             that.setState({streams: streams});
