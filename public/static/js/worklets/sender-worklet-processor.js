@@ -25,8 +25,6 @@ class SenderWorkletProcessor extends AudioWorkletProcessor {
 	    this.buf[i] = inputs[0][0][i];
 	}
 	if (this.audioWriter.available_write() >= this.buf.length) {
-	    console.log("DEBUG: sender worklet sending");
-	    console.log(this.buf);
 	    this.audioWriter.enqueue(this.buf);
 	}
 

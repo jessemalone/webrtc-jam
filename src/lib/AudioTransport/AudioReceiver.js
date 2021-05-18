@@ -19,7 +19,7 @@ function URLFromFiles(files) {
 }
 
 function AudioReceiver(audioContext) {
-    let bufferLengthInMs = 50;
+    let bufferLengthInMs = 40;
     let bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
     this.context = audioContext;
     this.mediaStreamDestination = audioContext.createMediaStreamDestination();
@@ -56,14 +56,15 @@ AudioReceiver.prototype.getMediaStreamDestination = function() {
     return this.mediaStreamDestination;
 }
 
-AudioReceiver.prototype.receiveAudioSamples = function(samples) {
+AudioReceiver.prototype.receiveAudioSamples = function(blob) {
     // enqueue samples to the buffer
     // (samples come in as a blob and must be converted to arraybuffer
-    if (this.audioWriter.available_write() >= 128) {
-	samples.arrayBuffer().then((buf) => {
-	    this.audioWriter.enqueue(new Float32Array(buf));
+	blob.arrayBuffer().then((buf) => {
+	    let samples = new Float32Array(buf);
+	    if (this.audioWriter.available_write() >= samples.length) {
+		this.audioWriter.enqueue(samples);
+	    }
 	});
-    }
 }
 
 export { AudioReceiver }

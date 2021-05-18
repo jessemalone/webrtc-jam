@@ -30,8 +30,6 @@ DataChannelAudioTransport.prototype.addStream = function(stream) {
     // TODO: You are here May 11, is the anonymous call back not persisted? Perhaps define the callback on the datachannel object
     dataChannel.onopen = (e) => {
 	this.audioSender.send(stream,function(data) {
-	    console.log("DEBUG: datachannels sending");
-	    console.log(data);
 	    dataChannel.send(data);
 	});
     };
