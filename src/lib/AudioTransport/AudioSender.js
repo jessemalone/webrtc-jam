@@ -6,12 +6,12 @@ import {AudioReader, RingBuffer } from 'ringbuf.js';
 function URLFromFiles(files) {
   const promises = files
     .map((file) => fetch(file)
-      .then((response) => response.text()));
+	 .then((response) => response.text()));
 
   return Promise
     .all(promises)
     .then((texts) => {
-      const text = texts.join('');
+	const text = texts.join('').replace(/^.*exports.*$/mg,"");
       const blob = new Blob([text], {type: "application/javascript"});
 
       return URL.createObjectURL(blob);
@@ -20,20 +20,21 @@ function URLFromFiles(files) {
 
 function AudioSender(audioContext) {
     let bufferLengthInMs = 50;
-    let bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
+    this.bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
     this.context = audioContext;
-    URLFromFiles(['/static/js/worklets/sender-worklet-processor.js', '/static/js/0.chunk.js']).then((u) => {
+    URLFromFiles(['/static/js/worklets/sender-worklet-processor.js', '/static/js/ringbuf.js']).then((u) => {
 	this.context.audioWorklet.addModule(u).then((e) => {
-	    let worklet = new AudioWorkletNode(this.context, 'sender-worklet-processor');
-	    this.sharedBUffer = RingBuffer.getStorageForCapacity(bufferLengthInSamples, Float32Array);
-	    this.ringBuffer = new RingBuffer(this.sharedBUffer, Float32Array);
+	    this.worklet = new AudioWorkletNode(this.context, 'sender-worklet-processor');
+	    this.sharedBuffer = RingBuffer.getStorageForCapacity(this.bufferLengthInSamples, Float32Array);
+	    this.ringBuffer = new RingBuffer(this.sharedBuffer, Float32Array);
+
+	    console.log("DEBUG sending sender buffer");
+	    console.log(this.sharedBuffer);
 	    
-	    worklet.port.postMessage({
+	    this.worklet.port.postMessage({
 		type: "send-buffer",
 		data: this.sharedBuffer
 	    });
-	    // connect the processor to mediaStreamSource
-	    this.mediaStreamSource.connect(worklet);
 	});
     });
 
@@ -41,11 +42,19 @@ function AudioSender(audioContext) {
 
 AudioSender.prototype.send = function(stream, callback) {
     let audioReader = new AudioReader(this.ringBuffer);
-    let buf = new Float32Array(128);
+    let buf = new Float32Array(this.bufferLengthInSamples);
+
+    // connect the processor to mediaStreamSource
+    let mediaStreamSource = this.context.createMediaStreamSource(stream);
+    mediaStreamSource.connect(this.worklet);
+    this.worklet.connect(this.context.destination);
 
     let render = () => {
 	requestAnimationFrame(render);
-	if (audioReader.available_read() >= 128) {
+	console.log("DEBUG: available_read");
+	console.log(audioReader.available_read());
+	console.log(this.bufferLengthInSamples);
+	if (audioReader.available_read() <= this.bufferLengthInSamples) {
 	    audioReader.dequeue(buf);
 	    callback(buf);
 	}

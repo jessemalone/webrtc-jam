@@ -8,7 +8,9 @@ class ReceiverWorkletProcessor extends AudioWorkletProcessor {
     }
 
     handleMessage(e) {
+	console.log("DEBUG: rwp handleMessage");
         if (e.data.type === "receive-buffer") {
+	    console.log("DEBUG: rwp got receive buffer");
             let sharedBuffer = e.data.data;
 	    let ringBuffer = new RingBuffer(sharedBuffer, Float32Array);
 	    this.audioReader = new AudioReader(ringBuffer);
@@ -17,11 +19,15 @@ class ReceiverWorkletProcessor extends AudioWorkletProcessor {
     }
     process(inputs, outputs) {
 
-	this.audioReader.dequeue(buf);
+	if (!this.audioReader) {
+	    return true;
+	}
+	this.audioReader.dequeue(this.buf);
 
 	for (var i=0;i < 128; i++) {
 	    outputs[0][0][i] = this.buf[i]
 	}
+	return true;
     }
 }
 
