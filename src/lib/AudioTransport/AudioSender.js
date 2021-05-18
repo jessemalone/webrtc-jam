@@ -19,7 +19,7 @@ function URLFromFiles(files) {
 }
 
 function AudioSender(audioContext) {
-    let bufferLengthInMs = 40;
+    let bufferLengthInMs = 20;
     this.bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
     this.context = audioContext;
     URLFromFiles(['/static/js/worklets/sender-worklet-processor.js', '/static/js/ringbuf.js']).then((u) => {
@@ -48,14 +48,12 @@ AudioSender.prototype.send = function(stream, callback) {
     let mediaStreamSource = this.context.createMediaStreamSource(stream);
     mediaStreamSource.connect(this.worklet);
 
-    let render = () => {
-	requestAnimationFrame(render);
+    setInterval(() => {
 	if (audioReader.available_read() >= this.bufferLengthInSamples / 2) {
 	    audioReader.dequeue(buf);
 	    callback(buf);
 	}
-    }
-    requestAnimationFrame(render);
+    }, 0);
 };
 
 
