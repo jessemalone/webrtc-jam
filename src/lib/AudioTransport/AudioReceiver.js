@@ -19,7 +19,7 @@ function URLFromFiles(files) {
 }
 
 function AudioReceiver(audioContext) {
-    let bufferLengthInMs = 40;
+    let bufferLengthInMs = 30;
     let bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
     this.context = audioContext;
     this.mediaStreamDestination = audioContext.createMediaStreamDestination();
