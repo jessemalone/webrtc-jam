@@ -19,7 +19,7 @@ function URLFromFiles(files) {
 }
 
 function AudioSender(audioContext) {
-    let bufferLengthInMs = 50;
+    let bufferLengthInMs = 40;
     this.bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
     this.context = audioContext;
     URLFromFiles(['/static/js/worklets/sender-worklet-processor.js', '/static/js/ringbuf.js']).then((u) => {
@@ -42,19 +42,15 @@ function AudioSender(audioContext) {
 
 AudioSender.prototype.send = function(stream, callback) {
     let audioReader = new AudioReader(this.ringBuffer);
-    let buf = new Float32Array(this.bufferLengthInSamples);
+    let buf = new Float32Array(this.bufferLengthInSamples / 2);
 
     // connect the processor to mediaStreamSource
     let mediaStreamSource = this.context.createMediaStreamSource(stream);
     mediaStreamSource.connect(this.worklet);
-    this.worklet.connect(this.context.destination);
 
     let render = () => {
 	requestAnimationFrame(render);
-	console.log("DEBUG: available_read");
-	console.log(audioReader.available_read());
-	console.log(this.bufferLengthInSamples);
-	if (audioReader.available_read() <= this.bufferLengthInSamples) {
+	if (audioReader.available_read() >= this.bufferLengthInSamples / 2) {
 	    audioReader.dequeue(buf);
 	    callback(buf);
 	}
