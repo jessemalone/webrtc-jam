@@ -42,14 +42,14 @@ function AudioSender(audioContext) {
 
 AudioSender.prototype.send = function(stream, callback) {
     let audioReader = new AudioReader(this.ringBuffer);
-    let buf = new Float32Array(this.bufferLengthInSamples / 2);
+    let buf = new Float32Array(this.bufferLengthInSamples / 4);
 
     // connect the processor to mediaStreamSource
     let mediaStreamSource = this.context.createMediaStreamSource(stream);
     mediaStreamSource.connect(this.worklet);
 
     setInterval(() => {
-	if (audioReader.available_read() >= this.bufferLengthInSamples / 2) {
+	if (audioReader.available_read() >= this.bufferLengthInSamples / 4) {
 	    audioReader.dequeue(buf);
 	    callback(buf);
 	}

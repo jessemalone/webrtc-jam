@@ -42,7 +42,7 @@ class Tracks extends React.Component {
             audio: {
                 autoGainContol: false,
                 echoCancellation: false,
-                latency: 0.005,
+                latency: {max: 0.01, min: 0.001},
                 noiseSuppression: false,
                 channelCount: 1
             },
