@@ -23,6 +23,7 @@ function AudioReceiver(audioContext) {
     let bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
     this.context = audioContext;
     this.mediaStreamDestination = audioContext.createMediaStreamDestination();
+    this.averageReceivedSampleLength = bufferLengthInSamples;
     this.worklet = {};
 
     URLFromFiles(['/static/js/worklets/receiver-worklet-processor.js', '/static/js/ringbuf.js']).then((u) => {
@@ -69,34 +70,41 @@ AudioReceiver.prototype.getMediaStreamDestination = function() {
     return this.mediaStreamDestination;
 }
 
+AudioReceiver.prototype.getAverageReceivedLength = function(length) {
+    // return a rolling average over 1000 received sets of sample
+    return (this.averageReceivedSampleLength * 999 + length) / 1000;
+}
+
 AudioReceiver.prototype.receiveAudioSamples = function(blob) {
     // enqueue samples to the buffer
     // (samples come in as a blob and must be converted to arraybuffer
-	blob.arrayBuffer().then((buf) => {
-	    let samples = new Float32Array(buf);
-	    if (this.audioWriter.available_write() >= samples.length) {
-		this.audioWriter.enqueue(samples);
-	    }
-	    else {
-		console.log("DEBUG: Buffer overrun - growing buffer");
-		let currentLength = this.ringBuffer.capacity;
-		let newLength = currentLength + samples.length;
+    blob.arrayBuffer().then((buf) => {
+	let samples = new Float32Array(buf);
+	this.averageReceivedSampleLength = this.getAverageReceivedLength(samples.length)
+
+	if (this.audioWriter.available_write() >= samples.length) {
+	    this.audioWriter.enqueue(samples);
+	}
+	else if (this.audioWriter.available_write() >= this.averageReceivedSampleLength) {
+	    console.log("DEBUG: Buffer overrun - growing buffer");
+	    let currentLength = this.ringBuffer.capacity;
+	    let newLength = currentLength + samples.length;
+	    this.setBuffers(newLength);
+	    let newMs = 1000 / (this.context.sampleRate / newLength);
+	    console.log("DEBUG: New buffer length: " + String(newMs));
+	}
+
+	if (this.audioWriter.available_write() > 4*this.averageReceivedSampleLength) {
+	    let currentLength = this.ringBuffer.capacity;
+	    let newLength = currentLength - samples.length;
+	    let newMs = 1000 / (this.context.sampleRate / newLength);
+	    if (newMs > 20) { 
+		console.log("DEBUG: shrinking buffer");
 		this.setBuffers(newLength);
-		let newMs = 1000 / (this.context.sampleRate / newLength);
 		console.log("DEBUG: New buffer length: " + String(newMs));
 	    }
-
-	    if (this.audioWriter.available_write() > 4*samples.length) {
-		let currentLength = this.ringBuffer.capacity;
-		let newLength = currentLength - samples.length;
-		let newMs = 1000 / (this.context.sampleRate / newLength);
-		if (newMs > 20) { 
-		    console.log("DEBUG: shrinking buffer");
-		    this.setBuffers(newLength);
-		    console.log("DEBUG: New buffer length: " + String(newMs));
-		}
-	    }
-	});
+	}
+    });
 }
 
 export { AudioReceiver }
