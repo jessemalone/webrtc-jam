@@ -19,29 +19,31 @@ function URLFromFiles(files) {
 }
 
 function AudioReceiver(audioContext) {
-    let bufferLengthInMs = 30;
+    let bufferLengthInMs = 20;
     let bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
     this.context = audioContext;
     this.mediaStreamDestination = audioContext.createMediaStreamDestination();
+    this.worklet = {};
 
     URLFromFiles(['/static/js/worklets/receiver-worklet-processor.js', '/static/js/ringbuf.js']).then((u) => {
 	this.context.audioWorklet.addModule(u).then((e) => {
 	    try {
-		let worklet = new AudioWorkletNode(this.context, 'receiver-worklet-processor');
+		this.worklet = new AudioWorkletNode(this.context, 'receiver-worklet-processor');
 		// create shared buffer
 		console.log("DEBUG ===================================");
 		console.log(Float32Array.BYTES_PER_ELEMENT);
 		console.log(ArrayBuffer.__proto__.isPrototypeOf(Float32Array));
-		this.sharedBuffer = RingBuffer.getStorageForCapacity(bufferLengthInSamples, Float32Array);
-		this.ringBuffer = new RingBuffer(this.sharedBuffer, Float32Array);
-		this.audioWriter = new AudioWriter(this.ringBuffer);
-		// initialize audio worklet processor
-		worklet.port.postMessage({
-		    type: "receive-buffer",
-		    data: this.sharedBuffer
-		});
+		// this.sharedBuffer = RingBuffer.getStorageForCapacity(bufferLengthInSamples, Float32Array);
+		// this.ringBuffer = new RingBuffer(this.sharedBuffer, Float32Array);
+		// this.audioWriter = new AudioWriter(this.ringBuffer);
+		// // initialize audio worklet processor
+		// worklet.port.postMessage({
+		//     type: "receive-buffer",
+		//     data: this.sharedBuffer
+		// });
+		this.setBuffers(bufferLengthInSamples);
 		// connect the processor to mediaStreamDestination
-		worklet.connect(this.mediaStreamDestination);
+		this.worklet.connect(this.mediaStreamDestination);
 	    } catch (err) {
 		console.log("ERROR +=====");
 		console.log(err);
@@ -50,6 +52,17 @@ function AudioReceiver(audioContext) {
     });
 
 
+}
+
+AudioReceiver.prototype.setBuffers = function(bufferLengthInSamples) {
+    this.sharedBuffer = RingBuffer.getStorageForCapacity(bufferLengthInSamples, Float32Array);
+    this.ringBuffer = new RingBuffer(this.sharedBuffer, Float32Array);
+    this.audioWriter = new AudioWriter(this.ringBuffer);
+    // initialize audio worklet processor
+    this.worklet.port.postMessage({
+	type: "receive-buffer",
+	data: this.sharedBuffer
+    });
 }
 
 AudioReceiver.prototype.getMediaStreamDestination = function() {
@@ -63,6 +76,25 @@ AudioReceiver.prototype.receiveAudioSamples = function(blob) {
 	    let samples = new Float32Array(buf);
 	    if (this.audioWriter.available_write() >= samples.length) {
 		this.audioWriter.enqueue(samples);
+	    }
+	    else {
+		console.log("DEBUG: Buffer overrun - growing buffer");
+		let currentLength = this.ringBuffer.capacity;
+		let newLength = currentLength + samples.length;
+		this.setBuffers(newLength);
+		let newMs = 1000 / (this.context.sampleRate / newLength);
+		console.log("DEBUG: New buffer length: " + String(newMs));
+	    }
+
+	    if (this.audioWriter.available_write() > 4*samples.length) {
+		let currentLength = this.ringBuffer.capacity;
+		let newLength = currentLength - samples.length;
+		let newMs = 1000 / (this.context.sampleRate / newLength);
+		if (newMs > 25) { 
+		    console.log("DEBUG: shrinking buffer");
+		    this.setBuffers(newLength);
+		    console.log("DEBUG: New buffer length: " + String(newMs));
+		}
 	    }
 	});
 }
