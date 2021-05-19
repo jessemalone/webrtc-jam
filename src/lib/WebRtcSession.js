@@ -11,7 +11,7 @@ function WebRtcSession(channelId, stream, signaller, options) {
     this.options = options;
     this.channelId = channelId;
 
-    this.ctx = new AudioContext();
+    this.ctx = new AudioContext({latencyHint: "interactive"});
     this.audioReceiver = new AudioReceiver(this.ctx);
     this.audioSender = new AudioSender(this.ctx);
 

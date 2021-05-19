@@ -90,7 +90,7 @@ AudioReceiver.prototype.receiveAudioSamples = function(blob) {
 		let currentLength = this.ringBuffer.capacity;
 		let newLength = currentLength - samples.length;
 		let newMs = 1000 / (this.context.sampleRate / newLength);
-		if (newMs > 25) { 
+		if (newMs > 20) { 
 		    console.log("DEBUG: shrinking buffer");
 		    this.setBuffers(newLength);
 		    console.log("DEBUG: New buffer length: " + String(newMs));
