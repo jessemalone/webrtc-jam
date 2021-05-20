@@ -31,4 +31,9 @@ class ReceiverWorkletProcessor extends AudioWorkletProcessor {
     }
 }
 
-registerProcessor('receiver-worklet-processor', ReceiverWorkletProcessor);
+try {
+    registerProcessor('receiver-worklet-processor', ReceiverWorkletProcessor);
+} catch (err) {
+    console.log("WARNING: registierProcessor failed for 'ReceiverWorkletProcessor'");
+    console.log(err);
+}
