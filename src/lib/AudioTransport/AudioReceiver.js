@@ -26,33 +26,37 @@ function AudioReceiver(audioContext) {
     this.averageReceivedSampleLength = bufferLengthInSamples;
     this.worklet = {};
 
-    URLFromFiles(['/static/js/worklets/receiver-worklet-processor.js', '/static/js/ringbuf.js']).then((u) => {
-	this.context.audioWorklet.addModule(u).then((e) => {
-	    try {
-		this.worklet = new AudioWorkletNode(this.context, 'receiver-worklet-processor');
-		// create shared buffer
-		console.log("DEBUG ===================================");
-		console.log(Float32Array.BYTES_PER_ELEMENT);
-		console.log(ArrayBuffer.__proto__.isPrototypeOf(Float32Array));
-		// this.sharedBuffer = RingBuffer.getStorageForCapacity(bufferLengthInSamples, Float32Array);
-		// this.ringBuffer = new RingBuffer(this.sharedBuffer, Float32Array);
-		// this.audioWriter = new AudioWriter(this.ringBuffer);
-		// // initialize audio worklet processor
-		// worklet.port.postMessage({
-		//     type: "receive-buffer",
-		//     data: this.sharedBuffer
-		// });
-		this.setBuffers(bufferLengthInSamples);
-		// connect the processor to mediaStreamDestination
-		this.worklet.connect(this.mediaStreamDestination);
-	    } catch (err) {
-		console.log("ERROR +=====");
-		console.log(err);
-	    }
+    let ready = new Promise((resolve, reject) => {
+	URLFromFiles(['/static/js/worklets/receiver-worklet-processor.js', '/static/js/ringbuf.js']).then((u) => {
+	    this.context.audioWorklet.addModule(u).then((e) => {
+		try {
+		    this.worklet = new AudioWorkletNode(this.context, 'receiver-worklet-processor');
+		    // create shared buffer
+		    console.log("DEBUG ===================================");
+		    console.log(Float32Array.BYTES_PER_ELEMENT);
+		    console.log(ArrayBuffer.__proto__.isPrototypeOf(Float32Array));
+		    // this.sharedBuffer = RingBuffer.getStorageForCapacity(bufferLengthInSamples, Float32Array);
+		    // this.ringBuffer = new RingBuffer(this.sharedBuffer, Float32Array);
+		    // this.audioWriter = new AudioWriter(this.ringBuffer);
+		    // // initialize audio worklet processor
+		    // worklet.port.postMessage({
+		    //     type: "receive-buffer",
+		    //     data: this.sharedBuffer
+		    // });
+		    this.setBuffers(bufferLengthInSamples);
+		    // connect the processor to mediaStreamDestination
+		    this.worklet.connect(this.mediaStreamDestination);
+		    resolve(this);
+		} catch (err) {
+		    console.log("ERROR +=====");
+		    console.log(err);
+		    reject(err);
+		}
+	    });
 	});
     });
 
-
+    return(ready);
 }
 
 AudioReceiver.prototype.setBuffers = function(bufferLengthInSamples) {
@@ -72,7 +76,7 @@ AudioReceiver.prototype.getMediaStreamDestination = function() {
 
 AudioReceiver.prototype.getAverageReceivedLength = function(length) {
     // return a rolling average over 1000 received sets of sample
-    return (this.averageReceivedSampleLength * 999 + length) / 1000;
+    return (this.averageReceivedSampleLength * 3999 + length) / 4000;
 }
 
 AudioReceiver.prototype.receiveAudioSamples = function(blob) {
@@ -85,13 +89,16 @@ AudioReceiver.prototype.receiveAudioSamples = function(blob) {
 	if (this.audioWriter.available_write() >= samples.length) {
 	    this.audioWriter.enqueue(samples);
 	}
-	else if (this.audioWriter.available_write() >= this.averageReceivedSampleLength) {
+	else if (this.audioWriter.available_write() <= 2*this.averageReceivedSampleLength) {
 	    console.log("DEBUG: Buffer overrun - growing buffer");
+	    console.log("DEBUG: samples length" + String(samples.length));
+	    console.log("DEBUG: average" + String(this.averageReceivedSampleLength));
+	    console.log("DEBUG: available write" + String(this.audioWriter.available_write()));
 	    let currentLength = this.ringBuffer.capacity;
 	    let newLength = currentLength + samples.length;
 	    this.setBuffers(newLength);
 	    let newMs = 1000 / (this.context.sampleRate / newLength);
-	    console.log("DEBUG: New buffer length: " + String(newMs));
+	    console.log("DEBUG: New buffer length in ms: " + String(newMs));
 	}
 
 	if (this.audioWriter.available_write() > 4*this.averageReceivedSampleLength) {
@@ -100,8 +107,11 @@ AudioReceiver.prototype.receiveAudioSamples = function(blob) {
 	    let newMs = 1000 / (this.context.sampleRate / newLength);
 	    if (newMs > 20) { 
 		console.log("DEBUG: shrinking buffer");
+		console.log("DEBUG: samples length" + String(samples.length));
+		console.log("DEBUG: average" + String(this.averageReceivedSampleLength));
+		console.log("DEBUG: available write" + String(this.audioWriter.available_write()));
 		this.setBuffers(newLength);
-		console.log("DEBUG: New buffer length: " + String(newMs));
+		console.log("DEBUG: New buffer length in ms: " + String(newMs));
 	    }
 	}
     });

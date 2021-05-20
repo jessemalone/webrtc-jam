@@ -22,24 +22,30 @@ function AudioSender(audioContext) {
     let bufferLengthInMs = 20;
     this.bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
     this.context = audioContext;
-    URLFromFiles(['/static/js/worklets/sender-worklet-processor.js', '/static/js/ringbuf.js']).then((u) => {
-	this.context.audioWorklet.addModule(u).then((e) => {
-	    this.worklet = new AudioWorkletNode(this.context, 'sender-worklet-processor');
-	    this.sharedBuffer = RingBuffer.getStorageForCapacity(this.bufferLengthInSamples, Float32Array);
-	    this.ringBuffer = new RingBuffer(this.sharedBuffer, Float32Array);
-
-	    console.log("DEBUG sending sender buffer");
-	    console.log(this.sharedBuffer);
-	    
-	    this.worklet.port.postMessage({
-		type: "send-buffer",
-		data: this.sharedBuffer
+    let ready = new Promise((resolve, reject) => {
+	URLFromFiles(['/static/js/worklets/sender-worklet-processor.js', '/static/js/ringbuf.js']).then((u) => {
+	    this.context.audioWorklet.addModule(u).then((e) => {
+		this.initialize();
+		resolve(this);
 	    });
 	});
     });
-
+    return ready;
 };
 
+AudioSender.prototype.initialize = function() {
+    this.worklet = new AudioWorkletNode(this.context, 'sender-worklet-processor');
+    this.sharedBuffer = RingBuffer.getStorageForCapacity(this.bufferLengthInSamples, Float32Array);
+    this.ringBuffer = new RingBuffer(this.sharedBuffer, Float32Array);
+
+    console.log("DEBUG sending sender buffer");
+    console.log(this.sharedBuffer);
+    
+    this.worklet.port.postMessage({
+	type: "send-buffer",
+	data: this.sharedBuffer
+    });
+}
 AudioSender.prototype.send = function(stream, callback) {
     let audioReader = new AudioReader(this.ringBuffer);
     let buf = new Float32Array(this.bufferLengthInSamples / 4);

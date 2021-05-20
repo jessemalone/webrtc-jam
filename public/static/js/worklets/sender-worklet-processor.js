@@ -18,9 +18,13 @@ class SenderWorkletProcessor extends AudioWorkletProcessor {
     process(inputs, outputs) {
         // By default, the node has single input and output.
 
+	if (!this.audioWriter) {
+	    return true;
+	}
 	if (inputs[0].length == 0) {
 	    return true;
 	}
+
 	for (var i=0; i < 128; i++) {
 	    this.buf[i] = inputs[0][0][i];
 	}
@@ -32,4 +36,9 @@ class SenderWorkletProcessor extends AudioWorkletProcessor {
     }
 }
 
-registerProcessor('sender-worklet-processor', SenderWorkletProcessor);
+try {
+    registerProcessor('sender-worklet-processor', SenderWorkletProcessor);
+} catch (err) {
+    console.log("WARNING: registierProcessor failed for 'SenderWorkletProcessor'");
+    console.log(err);
+}
