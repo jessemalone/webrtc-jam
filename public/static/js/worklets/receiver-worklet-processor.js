@@ -8,9 +8,7 @@ class ReceiverWorkletProcessor extends AudioWorkletProcessor {
     }
 
     handleMessage(e) {
-	console.log("DEBUG: rwp handleMessage");
         if (e.data.type === "receive-buffer") {
-	    console.log("DEBUG: rwp got receive buffer");
             let sharedBuffer = e.data.data;
 	    let ringBuffer = new RingBuffer(sharedBuffer, Float32Array);
 	    this.audioReader = new AudioReader(ringBuffer);
