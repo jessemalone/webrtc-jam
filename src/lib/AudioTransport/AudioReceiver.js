@@ -75,7 +75,7 @@ AudioReceiver.prototype.getMediaStreamDestination = function() {
 }
 
 AudioReceiver.prototype.getAverageReceivedLength = function(length) {
-    // return a rolling average over 1000 received sets of sample
+    // return a rolling average over received sets of sample
     return (this.averageReceivedSampleLength * 3999 + length) / 4000;
 }
 
@@ -90,28 +90,27 @@ AudioReceiver.prototype.receiveAudioSamples = function(blob) {
 	    this.audioWriter.enqueue(samples);
 	}
 	else if (this.audioWriter.available_write() <= 2*this.averageReceivedSampleLength) {
-	    console.log("DEBUG: Buffer overrun - growing buffer");
-	    console.log("DEBUG: samples length" + String(samples.length));
-	    console.log("DEBUG: average" + String(this.averageReceivedSampleLength));
-	    console.log("DEBUG: available write" + String(this.audioWriter.available_write()));
+	    // console.log("DEBUG: Buffer overrun - growing buffer");
+	    // console.log("DEBUG: samples length" + String(samples.length));
+	    // console.log("DEBUG: average" + String(this.averageReceivedSampleLength));
+	    // console.log("DEBUG: available write" + String(this.audioWriter.available_write()));
 	    let currentLength = this.ringBuffer.capacity;
 	    let newLength = currentLength + samples.length;
 	    this.setBuffers(newLength);
 	    let newMs = 1000 / (this.context.sampleRate / newLength);
-	    console.log("DEBUG: New buffer length in ms: " + String(newMs));
+	    // console.log("DEBUG: New buffer length in ms: " + String(newMs));
 	}
-
-	if (this.audioWriter.available_write() > 4*this.averageReceivedSampleLength) {
+	else if (this.audioWriter.available_write() > 4*this.averageReceivedSampleLength) {
 	    let currentLength = this.ringBuffer.capacity;
 	    let newLength = currentLength - samples.length;
 	    let newMs = 1000 / (this.context.sampleRate / newLength);
 	    if (newMs > 20) { 
-		console.log("DEBUG: shrinking buffer");
-		console.log("DEBUG: samples length" + String(samples.length));
-		console.log("DEBUG: average" + String(this.averageReceivedSampleLength));
-		console.log("DEBUG: available write" + String(this.audioWriter.available_write()));
+		// console.log("DEBUG: shrinking buffer");
+		// console.log("DEBUG: samples length" + String(samples.length));
+		// console.log("DEBUG: average" + String(this.averageReceivedSampleLength));
+		// console.log("DEBUG: available write" + String(this.audioWriter.available_write()));
 		this.setBuffers(newLength);
-		console.log("DEBUG: New buffer length in ms: " + String(newMs));
+		// console.log("DEBUG: New buffer length in ms: " + String(newMs));
 	    }
 	}
     });
