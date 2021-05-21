@@ -82,7 +82,7 @@ AudioReceiver.prototype.getAverageReceivedLength = function(length) {
 AudioReceiver.prototype.receiveAudioSamples = function(blob) {
     // enqueue samples to the buffer
     // (samples come in as a blob and must be converted to arraybuffer
-    blob.arrayBuffer().then((buf) => {
+    new Response(blob).arrayBuffer().then((buf) => {
 	let samples = new Float32Array(buf);
 	this.averageReceivedSampleLength = this.getAverageReceivedLength(samples.length)
 
