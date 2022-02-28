@@ -1,4 +1,3 @@
-import { RingBuffer } from 'ringbuf.js'
 
 function Transcoder(encoder, frameSize) {
     this.encoder = encoder;
