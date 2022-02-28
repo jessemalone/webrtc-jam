@@ -52,6 +52,7 @@
     "node-sass": "4.14.1",
     "nouislider": "14.5.0",
     "optimize-css-assets-webpack-plugin": "5.0.4",
+    "opusscript": "^0.0.8",
     "pnp-webpack-plugin": "1.6.4",
     "postcss-flexbugs-fixes": "4.2.1",
     "postcss-loader": "3.0.0",
@@ -104,7 +105,11 @@
     ]
   },
   "devDependencies": {
-    "source-map-resolve": "^0.6.0"
+    "lodash": "^4.17.21",
+    "lodash.sortby": "^4.7.0",
+    "source-map-resolve": "^0.6.0",
+    "wavefile": "^11.0.0",
+    "worker-loader": "^3.0.8"
   },
   "jest": {
     "roots": [

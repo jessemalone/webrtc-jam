@@ -1,7 +1,8 @@
 // Given a MediaStreamDestination provide a method which will
 // pipe audio to that stream
 
-import { AudioWriter, RingBuffer } from 'ringbuf.js';
+import { RingBuffer } from 'ringbuf.js';
+import Worker from "./worker/opus-encoding-worker.worker.js";
 
 function URLFromFiles(files) {
     const promises = files
@@ -21,11 +22,16 @@ function URLFromFiles(files) {
 function AudioReceiver(audioContext) {
     let bufferLengthInMs = 20;
     let bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
+    this.frameSize = bufferLengthInSamples;
+
+
     this.context = audioContext;
     this.mediaStreamDestination = audioContext.createMediaStreamDestination();
     this.averageReceivedSampleLength = bufferLengthInSamples;
-    this.worklet = {};
 
+    this.worker = new Worker();
+    
+    this.worklet = {};
     let ready = new Promise((resolve, reject) => {
 	URLFromFiles(['/static/js/worklets/receiver-worklet-processor.js', '/static/js/ringbuf.js']).then((u) => {
 	    this.context.audioWorklet.addModule(u).then((e) => {
