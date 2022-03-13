@@ -44,7 +44,8 @@ class Tracks extends React.Component {
                 echoCancellation: false,
                 latency: {max: 0.01, min: 0.001},
                 noiseSuppression: false,
-                channelCount: 1
+                channelCount: 1,
+                sampleRate: {exact: 48000}
             },
             video: false
         }
@@ -64,6 +65,8 @@ class Tracks extends React.Component {
     webRtcSessionStarter() {
         return (stream) => {
             console.log("starting up");
+            console.log("media stream");
+            console.log(stream.getTracks()[0].getConstraints());
             this.setState({localStream: stream});
             this.webRtcSession = 
                 new WebRtcSession(

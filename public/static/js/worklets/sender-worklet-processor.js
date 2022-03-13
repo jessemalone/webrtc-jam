@@ -10,15 +10,13 @@ class SenderWorkletProcessor extends AudioWorkletProcessor {
 	console.log("DEBUG sender processor got message");
         if (message.data.type === "send-buffer") {
             let sharedBuffer = message.data.data;
-	    console.log(message);
-	    let ringBuffer = new RingBuffer(sharedBuffer, Float32Array);
-	    this.audioWriter = new AudioWriter(ringBuffer);
+	    this.ringBuffer = new RingBuffer(sharedBuffer, Float32Array);
         }
     }
     process(inputs, outputs) {
         // By default, the node has single input and output.
 
-	if (!this.audioWriter) {
+	if (!this.ringBuffer) {
 	    return true;
 	}
 	if (inputs[0].length == 0) {
@@ -28,8 +26,10 @@ class SenderWorkletProcessor extends AudioWorkletProcessor {
 	for (var i=0; i < 128; i++) {
 	    this.buf[i] = inputs[0][0][i];
 	}
-	if (this.audioWriter.available_write() >= this.buf.length) {
-	    this.audioWriter.enqueue(this.buf);
+        // console.log("DEBUG: sender-worklet: Copied data " + this.ringBuffer.available_write());
+        if (this.ringBuffer.available_write() >= this.buf.length) {
+            // console.log("DEBUG: sender-worklet: pushing to decodedBuffer");
+	    this.ringBuffer.push(this.buf);
 	}
 
 	return true;

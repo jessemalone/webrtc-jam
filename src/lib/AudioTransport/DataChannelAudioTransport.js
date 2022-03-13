@@ -29,6 +29,7 @@ DataChannelAudioTransport.prototype.addStream = function(stream) {
     let dataChannel = this.peerConnection.createDataChannel("stream");
     // TODO: You are here May 11, is the anonymous call back not persisted? Perhaps define the callback on the datachannel object
     dataChannel.onopen = (e) => {
+        console.log("DEBUG: DataChannelAudioTransport - got onopen");
 	this.audioSender.send(stream,function(data) {
 	    dataChannel.send(data);
 	});
@@ -36,6 +37,7 @@ DataChannelAudioTransport.prototype.addStream = function(stream) {
 };
 
 DataChannelAudioTransport.prototype.handleMessage = function(message) {
+    // console.log("DEBUG: DataChannelAudioTransport.handleMessage");
     this.audioReceiver.receiveAudioSamples(message.data);
 };
 

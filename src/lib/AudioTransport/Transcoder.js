@@ -35,18 +35,38 @@ function floatsToInts(buf) {
   Pull all complete packets off the inputbuffer and decode into the output
   buffer, stopping if the output buffer is full
 */
+let i = 0
 Transcoder.prototype.decodeBuffer = function(inputRingBuffer, outputRingBuffer) {
     // let decoded = this.encoder.decode(buf);
+    // i++;
+    // if (i % 1000 == 1) {
+    //     console.log("DEBUG: Transcoder.decodeBuffer available_read(): " + inputRingBuffer.available_read())
+    // }
     while (inputRingBuffer.available_read() >=2) {
         // Each packet is prepended by two bytes encoding its length
         let packetLenBytes = new Uint8Array(2);
         inputRingBuffer.pop(packetLenBytes);
         let packetLen = new Int16Array(packetLenBytes.buffer)[0];
 
+        // if (i % 1000 == 1) {
+        //     console.log("DEBUG: Transcoder.decodeBuffer available_write(): " + outputRingBuffer.available_write())
+        //     console.log("DEBUG: Transcoder.decodeBuffer packetLen: " + packetLen)
+        // }
+
         if (packetLen > 0 && outputRingBuffer.available_write() >= packetLen) {
             let packet = new Uint8Array(packetLen);
             inputRingBuffer.pop(packet);
-            outputRingBuffer.push(this.decodePacket(packet));
+            try {
+                let decodedPacket = this.decodePacket(packet);
+                outputRingBuffer.push(decodedPacket);
+            } catch (e) {
+                console.error("Decoder error: " + e);
+                // let tmpBuf = new Uint8Array(inputRingBuffer.available_read());
+                // inputRingBuffer.pop(tmpBuf);
+                // // inputRingBuffer.push(packetLenBytes);
+                // inputRingBuffer.push(packet);
+                // inputRingBuffer.push(tmpBuf);
+            }
         } else if (outputRingBuffer.available_write() < packetLen) {
             let tmpBuf = new Uint8Array(inputRingBuffer.available_read());
             inputRingBuffer.pop(tmpBuf);
@@ -64,10 +84,18 @@ Transcoder.prototype.decodeBuffer = function(inputRingBuffer, outputRingBuffer) 
 */
 Transcoder.prototype.encodeBuffer = function(inputRingBuffer, outputRingBuffer) {
     let inputBuf = new Float32Array(this.frameSize);
+
+    // console.log("DEBUG: Transcoder.encodeBuffer available_read(), frameSize: " + inputRingBuffer.available_read() + ", " + this.frameSize)
+    // TODO: cleanup
+    let i = 0;
     while (inputRingBuffer.available_read() >= this.frameSize) {
         inputRingBuffer.pop(inputBuf);
         let packet = this.encodePacket(inputBuf);
 
+        // i++;
+        // if (i % 1000000 == 1) {
+        //     console.log("DEBUG: Transcoder.encodeBuffer available_write(): " + outputRingBuffer.available_write())
+        // }
         if (outputRingBuffer.available_write() >= packet.length + 2) {
             let packetLenBytes = new Uint8Array(new Int16Array([packet.length]).buffer);
             outputRingBuffer.push(packetLenBytes);
