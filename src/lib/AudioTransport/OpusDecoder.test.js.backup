@@ -1,0 +1,316 @@
+import { RingBuffer } from "ringbuf.js";
+import { Transcoder} from "./OpusDecoder"
+import { OpusEncoder } from '@discordjs/opus'
+import { WaveFile } from 'wavefile'
+
+import '@jest/globals'
+// import streamify from "bfj/src/streamify";
+
+var fft = require('fft-js').fft;
+var fftUtil = require('fft-js').util;
+let fs = require('fs');
+
+
+let sampleRate = 48000;
+let frameDuration = 120;
+let channels = 1;
+let frameSize = sampleRate * frameDuration / 1000;
+
+function toInt16(buffer) {
+    let result = new Int16Array(buffer.length);
+    for (var i=0; i<buffer.length; i++) {
+        let sample = buffer[i]
+        result[i] = sample >= 0 ? sample * 32767 : sample * 32768;
+    }
+
+    return result
+}
+function toFloat32(buffer) {
+    let result = new Float32Array(buffer.length);
+    for (var i=0; i<buffer.length; i++) {
+        let sample = buffer[i]
+        result[i] = sample >= 0 ? sample / 32767 : sample / 32768;
+    }
+
+    return result
+}
+
+function generateSine(rate, freq) {
+    let buffer = new Float32Array(frameSize*channels);
+    for (var i=0; i<buffer.length; i++) {
+        buffer[i] = Math.sin(i / (rate / (freq*Math.PI*2)))
+    }
+
+    return buffer;
+}
+
+function fftMatch(signal1, signal2, rate, desiredMatchingFreqs) {
+    let windowSize = 4096;
+    let phasors1 = fft(signal1.slice(0, windowSize));
+    let freqs1 = fftUtil.fftFreq(phasors1, rate);
+    let magnitudes1 = fftUtil.fftMag(phasors1);
+
+    let phasors2 = fft(signal2.slice(0, windowSize));
+    let freqs2 = fftUtil.fftFreq(phasors2, rate);
+    let magnitudes2 = fftUtil.fftMag(phasors2);
+
+    let topn1 = topmagnitudes(magnitudes1, desiredMatchingFreqs);
+    let topn2 = topmagnitudes(magnitudes2, desiredMatchingFreqs);
+
+
+    for (var i=0; i<topn1.length; i++) {
+        if (freqs1[topn1[i]] != freqs2[topn2[i]]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function topmagnitudes(mags, k) {
+    let result = new Array(k);
+    for (var i=0; i<result.length; i++) {
+        result[i] = 0;
+    }
+    
+    for (var i=0; i<mags.length; i++) {
+        for (var j=k-1; j>=0; j--) {
+            if ((j==0 && mags[i] > mags[result[j]]) || (mags[i] > mags[result[j]] && mags[i] <= mags[result[j-1]])) {
+                result[j] = i;
+                break;
+            }
+        }
+    }
+
+    return result;
+}
+
+function writeWav(filename, data) {
+    let wav = new WaveFile();
+    wav.fromScratch(channels, sampleRate, '16', toInt16(data));
+    fs.writeFileSync(filename, wav.toBuffer());
+}
+
+describe('OpusDecoder', () => {
+    
+    // let Speaker = require('speaker');
+    let OpusScript = require("opusscript")
+    let opusEncoder;
+
+
+    let testAudio;
+    let encoderInput;
+
+    let opusscript;
+
+    beforeEach(() => {
+        // audioBuf = RingBuffer.getStorageForCapacity(frameSize, Float32Array);
+        // audioRingBuf = new RingBuffer(audioBuf, Float32Array);
+        // dataBuf = RingBuffer.getStorageForCapacity(frameSize, Uint8Array);
+        // dataRingBuf = new RingBuffer(dataBuf, Uint8Array);
+
+        opusscript = new OpusScript(sampleRate, channels, OpusScript.Application.AUDIO, {wasm:false});
+        opusEncoder = new OpusEncoder(sampleRate, channels);
+
+        let freq = 440;
+        testAudio = generateSine(sampleRate, freq);
+        encoderInput = toInt16(testAudio);
+
+        // let inputBuf = new Uint8Array(intSamples.buffer);
+        // const encoder = new OpusEncoder(sampleRate, channels);
+        // encoder.setBitrate(6000);
+        // let encodedAudio = encoder.encode(intSamples);
+        // let decodedAudio = new Uint8Array(frameSize*channels*2);
+        // decodedAudio.set(encoder.decode(encodedAudio));
+        // let decodedPCM = new Int16Array(decodedAudio.buffer);
+        // for (var i = 0;i < decodedPCM.buffer.length; i++) {
+        //     decodedPCM.buffer[i] = decodedAudio.buffer[i];
+        // }
+
+        // // === OpusScript attempt
+        // // encodedAudio = opusscript.encode(audioData, frameSize);
+
+        // // console.log(encodedAudio);
+        // // let decodedBuf = opusscript.decode(encodedAudio);
+        // // let decodedArray = new Uint16Array(decodedBuf.buffer.slice(decodedBuf.byteOffset, decodedBuf.byteOffset + decodedBuf.byteLength));
+        
+        // console.log(intSamples);
+        // // console.log(inputBuf.buffer);
+        // console.log(decodedPCM);
+
+        // const speaker = new Speaker({
+        //     channels: channels,
+        //     bitDepth: 16,
+        //     sampleRate: sampleRate,
+        //     signed: true
+        // });
+
+        // // Output to wav
+        // // CONCLUSION dec 30: the data in decodedPCM is fine, plays as a wave file.
+        // // Streaming to speaker is the issue.
+        // let wav = new WaveFile();
+        // wav.fromScratch(channels, sampleRate, '16', new Int16Array(decodedPCM.buffer));
+        // fs.writeFileSync('/home/jesse/tmp/outtest.wav', wav.toBuffer());
+        // // let inStream = streamify(Buffer.from(intSamples.buffer));
+        // let decStream = streamify(Buffer.from(new Int16Array(decodedPCM.buffer)));
+        // // speaker.cork();
+        // // inStream.pipe(speaker);
+        // // decStream.pipe(speaker);
+        // // speaker.uncork();
+        // // // dataRingBuf.push(encodedAudio, encodedAudio.length);
+    });
+
+    describe('.decodePacket', () => {
+        test('decodes a single packet into a float32 array', () => {
+            let transcoder = new Transcoder(opusEncoder);
+
+            let encodedPacket = opusEncoder.encode(encoderInput); 
+            let decodedAudio = transcoder.decodePacket(encodedPacket);
+
+            expect(fftMatch(testAudio, decodedAudio, sampleRate, 4)).toBe(true);
+        });
+    });
+    describe('.encodePacket', () => {
+        test('encodes a single packet from a float32 array', () => {
+            let transcoder = new Transcoder(opusEncoder);
+
+            let encodedPacket = transcoder.encodePacket(testAudio);
+            let decodedInt16 = new Int16Array(opusEncoder.decode(encodedPacket).buffer);
+
+            expect(fftMatch(encoderInput, decodedInt16, sampleRate, 4)).toBe(true);
+        });
+    });
+
+    describe('.decodeBuffer', () => {
+        let transcoder;
+        let numPackets;
+        let decodedBuf;
+        let decodedRingBuf;
+        let encodedBuf;
+        let encodedRingBuf;
+
+        beforeEach(() => {
+            numPackets = 4;
+            decodedBuf = RingBuffer.getStorageForCapacity(numPackets * frameSize, Float32Array);
+            decodedRingBuf = new RingBuffer(decodedBuf, Float32Array);
+            encodedBuf = RingBuffer.getStorageForCapacity(numPackets * frameSize, Uint8Array);
+            encodedRingBuf = new RingBuffer(encodedBuf, Uint8Array);
+
+            transcoder = new Transcoder(opusEncoder);
+
+            let expectedEncodedSize = 0;
+            for (var i=0; i<numPackets; i++) {
+                let packet = transcoder.encodePacket(testAudio);
+                expectedEncodedSize += packet.length + 2;
+                encodedRingBuf.push(new Uint8Array(new Int16Array([packet.length]).buffer));
+                encodedRingBuf.push(packet);
+            }
+            expect(encodedRingBuf.available_read()).toBe(expectedEncodedSize);
+            expect(decodedRingBuf.available_write()).toBeGreaterThan(0);
+        });
+
+        test('decodes from a buffer containing encoded packets', () => {
+            transcoder.decodeBuffer(encodedRingBuf, decodedRingBuf);
+
+            let decodedAudio = new Float32Array(numPackets*frameSize);
+            decodedRingBuf.pop(decodedAudio);
+
+            expect(fftMatch(testAudio, decodedAudio, sampleRate, 4)).toBe(true);
+            expect(encodedRingBuf.available_read()).toBe(0);
+        });
+        test('leaves unprocessed packets in the input buffer when the output is full', () => {
+            let shortenedOutputBuffer = RingBuffer.getStorageForCapacity((numPackets - 1) * frameSize, Float32Array);
+            let shortenedOutputRingBuf = new RingBuffer(shortenedOutputBuffer, Float32Array);
+
+            transcoder.decodeBuffer(encodedRingBuf, shortenedOutputRingBuf);
+            let decodedAudio = new Float32Array(frameSize * channels);
+            shortenedOutputRingBuf.pop(decodedAudio);
+
+            // Examine the unread packet
+            let leftoverPacketSizeBytes = new Uint8Array(2);
+            encodedRingBuf.pop(leftoverPacketSizeBytes);
+            let expectedLeftoverSize = new Int16Array(leftoverPacketSizeBytes.buffer)[0]
+
+            expect(fftMatch(testAudio, decodedAudio, sampleRate, 4)).toBe(true);
+            expect(encodedRingBuf.available_read()).toBe(expectedLeftoverSize);
+        });
+    });
+
+    describe('.encodeBuffer', () => {
+        test('Encodes all audio in the input ring buffer and puts the encoded data on the output buffer', () => {
+            let numPackets = 4;
+            let audioBuffer = RingBuffer.getStorageForCapacity(numPackets*frameSize, Float32Array);
+            let audioRingBuffer = new RingBuffer(audioBuffer, Float32Array);
+            let encodedBuffer = RingBuffer.getStorageForCapacity(numPackets*frameSize, Uint8Array);
+            let encodedRingBuffer = new RingBuffer(encodedBuffer, Uint8Array);
+
+            for (var i=0; i<numPackets; i++) {
+                audioRingBuffer.push(testAudio);
+            }
+
+            let transcoder = new Transcoder(opusEncoder);
+            transcoder.encodeBuffer(audioRingBuffer, encodedRingBuffer);
+
+            let outputBuffer = RingBuffer.getStorageForCapacity(numPackets*frameSize, Float32Array);
+            let outputRingBuffer = new RingBuffer(outputBuffer, Float32Array);
+            transcoder.decodeBuffer(encodedRingBuffer, outputRingBuffer);
+            let decodedAudio = new Float32Array(frameSize * channels);
+            outputRingBuffer.pop(decodedAudio);
+
+            expect(fftMatch(testAudio, decodedAudio, sampleRate, 4)).toBe(true);
+        });
+        describe('when the encoded size of the input is larger than the output buffer', () => {
+            test('it leaves both buffers unmodified', () => {
+
+            });
+        });
+    });
+    // describe('.decode', () => {
+    //     test('decodes from a buffer containing encoded packets', () => {
+    //         // Initialize an Opus Decoder, passing in dataRingBuf as output and audioRingBuf as input
+    //         // let opusDecoder = new OpusDecoder(opusscript);
+
+    //         // expect(dataRingBuf.available_read()).toBeGreaterThan(0);
+    //         // expect(audioRingBuf.available_write()).toBeGreaterThan(0);
+    //         // opusDecoder.decode(dataRingBuf, audioRingBuf);
+
+    //         // expect(dataRingBuf.available_read()).toBe(0);
+    //         // expect(audioRingBuf.available_read()).toBeGreaterThan(0);
+
+    //     });
+
+    //     // test('decodes from a buffer containing an incomplete packet', () => {
+
+    //     // });
+
+    //     // test('stops decoding when the output buffer is full', () => {
+
+    //     // });
+    // });
+    // describe('.floatToInt16LE', () => {
+    //     test('converts a float32 value to two byte Int16LE buffer', () => {
+    //         let fl = 1.0
+    //         let expectedInt = 32767
+    //         let transcoder = new Transcoder(opusscript);
+
+
+    //         let result = transcoder.floatToInt16LE(fl);
+
+
+    //         expect(Buffer.from(result).readInt16LE()).toBe(expectedInt);
+    //     });
+    // });
+
+    // describe('.floatToInt16LE', () => {
+    //     test('converts a float32 to two bytes encoding a little endian int16', () => {
+    //         let expectedFloat = 1.0
+    //         let intbuf = Buffer.alloc(2)
+    //         intbuf.writeInt16LE(32767);
+
+    //         let transcoder = new Transcoder(opusscript);
+    //         let result = transcoder.int16LEToFloat(intbuf);
+
+    //         expect(result).toBe(expectedFloat);
+    //     });
+    // });
+});
+

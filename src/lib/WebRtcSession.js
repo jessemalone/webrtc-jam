@@ -61,7 +61,7 @@ WebRtcSession.prototype.getOfferHandler = function() {
 
         // Set up remote stream handler
         //newPeerConnection.onaddstream = that.createRemoteStreamHandlerFor(message.sender_guid);
-	let ctx = new AudioContext({latencyHint: "interactive"});
+	let ctx = new AudioContext({latencyHint: "interactive", sampleRate: 48000});
 	let audioReceiverPromise = new AudioReceiver(ctx);
 	let audioSenderPromise = new AudioSender(ctx);
 
@@ -105,7 +105,7 @@ WebRtcSession.prototype.getAnnounceHandler = function() {
         // (This needs to be added before creating and sending answer)
         // Add local stream to the connection
         //newPeerConnection.addStream(that.localStream);
-	let ctx = new AudioContext({latencyHint: "interactive"});
+	let ctx = new AudioContext({latencyHint: "interactive", sampleRate: 48000});
 	let audioReceiverPromise = new AudioReceiver(ctx);
 	let audioSenderPromise = new AudioSender(ctx);
 	Promise.all([audioReceiverPromise,audioSenderPromise]).then(p => {

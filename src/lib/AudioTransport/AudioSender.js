@@ -1,7 +1,9 @@
 // Given a MediaStreamSource provide a method which will send
 // audio samples from that stream to a callback
 
-import {AudioReader, RingBuffer } from 'ringbuf.js';
+// TODO: Mar 3: OpusScript tries fetching the wasm file from web root `/...wasm.wasm`. Figure out how to make it fetch from static/js...
+import { RingBuffer } from 'ringbuf.js';
+import Worker from "./worker/opus-encoding-worker.worker.js";
 
 function URLFromFiles(files) {
   const promises = files
@@ -19,9 +21,16 @@ function URLFromFiles(files) {
 }
 
 function AudioSender(audioContext) {
-    let bufferLengthInMs = 20;
+    let bufferLengthInMs = 60;
+    let frameDurationMs = 20;
+    let outputBufferDurationMs = 5;
+
     this.bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
+    this.outputBufferLengthInSamples = audioContext.sampleRate / (1000 / outputBufferDurationMs);
+    this.frameSize = audioContext.sampleRate / (1000 / frameDurationMs);
     this.context = audioContext;
+
+    this.worker = new Worker();
     let ready = new Promise((resolve, reject) => {
 	URLFromFiles(['/static/js/worklets/sender-worklet-processor.js', '/static/js/ringbuf.js']).then((u) => {
 	    this.context.audioWorklet.addModule(u).then((e) => {
@@ -35,30 +44,64 @@ function AudioSender(audioContext) {
 
 AudioSender.prototype.initialize = function() {
     this.worklet = new AudioWorkletNode(this.context, 'sender-worklet-processor');
-    this.sharedBuffer = RingBuffer.getStorageForCapacity(this.bufferLengthInSamples, Float32Array);
-    this.ringBuffer = new RingBuffer(this.sharedBuffer, Float32Array);
+    this.decodedSharedBuffer = RingBuffer.getStorageForCapacity(this.bufferLengthInSamples, Float32Array);
+    this.decodedRingBuffer = new RingBuffer(this.decodedSharedBuffer, Float32Array);
+
+    this.encodedSharedBuffer = RingBuffer.getStorageForCapacity(this.outputBufferLengthInSamples, Uint8Array);
+    this.encodedRingBuffer = new RingBuffer(this.encodedSharedBuffer, Uint8Array);
 
     console.log("DEBUG sending sender buffer");
-    console.log(this.sharedBuffer);
     
     this.worklet.port.postMessage({
 	type: "send-buffer",
-	data: this.sharedBuffer
+	data: this.decodedSharedBuffer
+    });
+
+    this.worker.postMessage({
+        type: "init",
+        decodedBuffer: this.decodedSharedBuffer,
+        encodedBuffer: this.encodedSharedBuffer,
+        sampleRate: this.context.sampleRate,
+        frameSize: this.frameSize,
+        channels: this.context.channels,
     });
 }
 AudioSender.prototype.send = function(stream, callback) {
-    let audioReader = new AudioReader(this.ringBuffer);
-    let buf = new Float32Array(this.bufferLengthInSamples / 4);
+
+    // YOU ARE HERE March 13 2022: There are (probably) alignment problems since
+    // this buf doesn't conform to packet boundaries. Find a way to send only
+    // complete packets
+    let buf = new Uint8Array(this.outputBufferLengthInSamples);
 
     // connect the processor to mediaStreamSource
     let mediaStreamSource = this.context.createMediaStreamSource(stream);
     mediaStreamSource.connect(this.worklet);
 
+    // start the encoder
+    this.worker.addEventListener('message', (e) => {
+        console.log("DEBUG: got message from worker");
+        console.log(e.data);
+        if (e.data.type == "ready" && e.data.value == true) {
+            console.log("Encoding worker ready");
+            this.worker.postMessage({type: "encode"})
+            console.log("Start encoding");
+        }
+    });
+
     setInterval(() => {
-	if (audioReader.available_read() >= this.bufferLengthInSamples / 4) {
-	    audioReader.dequeue(buf);
+        // TODO: YOU ARE HERE March 11: it gets stuck waiting for available write.
+        //                               Somehow the buffer never drains completely
+        //               Maybe some synchronization with the encoding worker - where
+        //               it sends a signal when it's filled the buffer
+        // console.log("DEBUG: AudioSender send interval, available_read(): " + this.encodedRingBuffer.available_read());
+
+        if (this.encodedRingBuffer.available_read() > 0) {
+            // console.log("DEBUG: Sender encodedRingBuffer Buffer full, sending:" + this.encodedRingBuffer.available_read());
+            this.encodedRingBuffer.pop(buf);
 	    callback(buf);
-	}
+	} else {
+            // console.debug("DEBUG: Sender encodedRingBuffer still filling, length:" + this.encodedRingBuffer.available_read());
+        }
     }, 0);
 };
 
