@@ -30,6 +30,39 @@ function floatsToInts(buf) {
     return result;
 }
 
+function compoundPacketFromBuffer(encodedRingBuffer, length) {
+    // console.log("encoded len: " + encodedBuffer.length);
+    console.log("available: "+ encodedRingBuffer.available_read());
+    console.log("requested len: "+ length);
+    if (encodedRingBuffer.available_read() < 2) {
+        return new Uint8Array(0);
+    }
+
+    let outputBuffer = new Uint8Array(length);
+
+    console.log("available: "+ encodedRingBuffer.available_read());
+    console.log("requested len: "+ length);
+    let i = 0;
+    while (i+2 < length && 2 <= encodedRingBuffer.available_read()) {
+        encodedRingBuffer.pop(outputBuffer, 2, i);
+        let packetLenBytes = outputBuffer.slice(i,i+2);
+        let packetLen = new Int16Array(packetLenBytes.buffer)[0];
+        i += 2;
+
+        console.log("packet len: " + packetLen);
+        if (i + packetLen < length && packetLen <= encodedRingBuffer.available_read()) {
+            encodedRingBuffer.pop(outputBuffer,packetLen,i);
+            i += packetLen;
+        } else {
+            i -= 2;
+            break;
+        }
+    }
+
+    // outputStorageBuffer = encodedBuffer.slice(0,i);
+    // console.log("last index " + i);
+    return outputBuffer.slice(0,i);
+}
 
 /*
   Pull all complete packets off the inputbuffer and decode into the output
@@ -129,4 +162,4 @@ Transcoder.prototype.encodePacket = function(floats) {
 }
 
 
-export { Transcoder }
+export { Transcoder, compoundPacketFromBuffer }

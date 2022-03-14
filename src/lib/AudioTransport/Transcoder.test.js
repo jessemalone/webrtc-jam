@@ -1,5 +1,5 @@
 import { RingBuffer } from "ringbuf.js";
-import { Transcoder} from "./Transcoder"
+import { Transcoder, compoundPacketFromBuffer} from "./Transcoder"
 import { OpusEncoder } from '@discordjs/opus'
 import { WaveFile } from 'wavefile'
 
@@ -89,6 +89,94 @@ function writeWav(filename, data) {
     fs.writeFileSync(filename, wav.toBuffer());
 }
 
+function prepareEncodedBuffer(length, transcoder, testAudio) {
+    let numPackets = length;
+    let decodedBuf = RingBuffer.getStorageForCapacity(numPackets * frameSize, Float32Array);
+    let decodedRingBuf = new RingBuffer(decodedBuf, Float32Array);
+    let encodedBuf = RingBuffer.getStorageForCapacity(numPackets * frameSize, Uint8Array);
+    let encodedRingBuf = new RingBuffer(encodedBuf, Uint8Array);
+
+    let expectedEncodedSize = 0;
+    for (var i = 0; i < numPackets; i++) {
+        let packet = transcoder.encodePacket(testAudio);
+        expectedEncodedSize += packet.length + 2;
+        encodedRingBuf.push(new Uint8Array(new Int16Array([packet.length]).buffer));
+        encodedRingBuf.push(packet);
+    }
+    expect(encodedRingBuf.available_read()).toBe(expectedEncodedSize);
+    expect(decodedRingBuf.available_write()).toBeGreaterThan(0);
+
+    return {"decodedRingBuffer": decodedRingBuf, "encodedRingBuffer": encodedRingBuf}
+}
+
+describe('compoundPacketFromBuffer', () => {
+    let numPackets = 4;
+    let freq = 440;
+    let sampleRate = 48000;
+    let testAudio = generateSine(sampleRate, freq);
+    let opusEncoder = new OpusEncoder(sampleRate, channels);
+    let transcoder = new Transcoder(opusEncoder, frameSize);
+    let encodedBuffer;
+    let sampleEncodedPacket;
+    let sampleEncodedRingBuf
+    let samplePacketLen;
+    beforeEach(() => {
+            // Pack a known number of packets into a buffer
+            // ===========================================
+
+            // get a sample packet
+            let buffers = prepareEncodedBuffer(numPackets, transcoder, testAudio);
+            let packetLenBytes = new Uint8Array(2);
+            buffers["encodedRingBuffer"].pop(packetLenBytes);
+            samplePacketLen = new Int16Array(packetLenBytes.buffer)[0];
+            sampleEncodedPacket = new Uint8Array(samplePacketLen);
+
+            buffers["encodedRingBuffer"].pop(sampleEncodedPacket);
+
+            // Create a buffer with a known number copies of the sample packet
+            let sampleEncodedBuf = RingBuffer.getStorageForCapacity(numPackets*(2+sampleEncodedPacket.length), Uint8Array);
+            sampleEncodedRingBuf = new RingBuffer(sampleEncodedBuf, Uint8Array);
+            for (var i=0;i<=numPackets;i++) {
+                sampleEncodedRingBuf.push(packetLenBytes);
+                sampleEncodedRingBuf.push(sampleEncodedPacket);
+            }
+    });
+    describe('Given a buffer containing encoded packets and a length too small for all packets', () => {
+        test('It returns a buffer containing only the complete packets', () => {
+            // Get a compound packet from the encoded buffer
+            let compoundPacket = compoundPacketFromBuffer(sampleEncodedRingBuf, sampleEncodedRingBuf.available_read() - 1);
+            expect(compoundPacket.length).toBe((numPackets - 1) * (2 + samplePacketLen));
+        });
+        test('It decodes to audio that is shorter by one packet', () => {
+            // Decode and compare the decoded Audio
+            let compoundPacket = compoundPacketFromBuffer(sampleEncodedRingBuf, sampleEncodedRingBuf.available_read() - 1);
+            let compoundBuf = RingBuffer.getStorageForCapacity(compoundPacket.length, Uint8Array);
+            let compoundRingBuf = new RingBuffer(compoundBuf, Uint8Array);
+            compoundRingBuf.push(compoundPacket);
+
+            let decodedBuf = RingBuffer.getStorageForCapacity(numPackets * frameSize, Float32Array);
+            let decodedRingBuf = new RingBuffer(decodedBuf, Float32Array);
+            transcoder.decodeBuffer(compoundRingBuf, decodedRingBuf);
+            console.log("cp: " +compoundPacket);
+
+            // Decoded audio should be shorter than the original, since one packet was
+            // incomplete
+            expect(decodedRingBuf.available_read()).toBe((numPackets - 1) * testAudio.length);
+
+            // Decoded audio should still be audible
+            let decodedAudio = new Float32Array(numPackets*frameSize);
+            decodedRingBuf.pop(decodedAudio);
+            expect(fftMatch(testAudio, decodedAudio, sampleRate, 4)).toBe(true);
+        });
+        test("It leaves leftover packets in the original buffer", () => {
+            let compoundPacket = compoundPacketFromBuffer(sampleEncodedRingBuf, sampleEncodedRingBuf.available_read() - 1);
+
+            expect(sampleEncodedRingBuf.available_read()).toBe(samplePacketLen);
+        });
+
+    });
+});
+
 describe('OpusDecoder', () => {
     let opusEncoder;
 
@@ -135,22 +223,11 @@ describe('OpusDecoder', () => {
 
         beforeEach(() => {
             numPackets = 4;
-            decodedBuf = RingBuffer.getStorageForCapacity(numPackets * frameSize, Float32Array);
-            decodedRingBuf = new RingBuffer(decodedBuf, Float32Array);
-            encodedBuf = RingBuffer.getStorageForCapacity(numPackets * frameSize, Uint8Array);
-            encodedRingBuf = new RingBuffer(encodedBuf, Uint8Array);
 
             transcoder = new Transcoder(opusEncoder, frameSize);
-
-            let expectedEncodedSize = 0;
-            for (var i=0; i<numPackets; i++) {
-                let packet = transcoder.encodePacket(testAudio);
-                expectedEncodedSize += packet.length + 2;
-                encodedRingBuf.push(new Uint8Array(new Int16Array([packet.length]).buffer));
-                encodedRingBuf.push(packet);
-            }
-            expect(encodedRingBuf.available_read()).toBe(expectedEncodedSize);
-            expect(decodedRingBuf.available_write()).toBeGreaterThan(0);
+            let buffers = prepareEncodedBuffer(numPackets, transcoder, testAudio);
+            decodedRingBuf = buffers["decodedRingBuffer"];
+            encodedRingBuf = buffers["encodedRingBuffer"];
         });
 
         test('decodes from a buffer containing encoded packets', () => {
