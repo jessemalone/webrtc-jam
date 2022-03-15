@@ -4,6 +4,7 @@
 // TODO: Mar 3: OpusScript tries fetching the wasm file from web root `/...wasm.wasm`. Figure out how to make it fetch from static/js...
 import { RingBuffer } from 'ringbuf.js';
 import Worker from "./worker/opus-encoding-worker.worker.js";
+import * as transcoder from './Transcoder';
 
 function URLFromFiles(files) {
   const promises = files
@@ -21,12 +22,11 @@ function URLFromFiles(files) {
 }
 
 function AudioSender(audioContext) {
-    let bufferLengthInMs = 60;
-    let frameDurationMs = 20;
-    let outputBufferDurationMs = 5;
+    let bufferLengthInMs = 20;
+    let frameDurationMs = 10;
+    this.outputBufferLength = 240;
 
     this.bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
-    this.outputBufferLengthInSamples = audioContext.sampleRate / (1000 / outputBufferDurationMs);
     this.frameSize = audioContext.sampleRate / (1000 / frameDurationMs);
     this.context = audioContext;
 
@@ -47,7 +47,7 @@ AudioSender.prototype.initialize = function() {
     this.decodedSharedBuffer = RingBuffer.getStorageForCapacity(this.bufferLengthInSamples, Float32Array);
     this.decodedRingBuffer = new RingBuffer(this.decodedSharedBuffer, Float32Array);
 
-    this.encodedSharedBuffer = RingBuffer.getStorageForCapacity(this.outputBufferLengthInSamples, Uint8Array);
+    this.encodedSharedBuffer = RingBuffer.getStorageForCapacity(this.outputBufferLength, Uint8Array);
     this.encodedRingBuffer = new RingBuffer(this.encodedSharedBuffer, Uint8Array);
 
     console.log("DEBUG sending sender buffer");
@@ -71,7 +71,7 @@ AudioSender.prototype.send = function(stream, callback) {
     // YOU ARE HERE March 13 2022: There are (probably) alignment problems since
     // this buf doesn't conform to packet boundaries. Find a way to send only
     // complete packets
-    let buf = new Uint8Array(this.outputBufferLengthInSamples);
+    // let buf = new Uint8Array(this.outputBufferLengthInSamples);
 
     // connect the processor to mediaStreamSource
     let mediaStreamSource = this.context.createMediaStreamSource(stream);
@@ -97,7 +97,7 @@ AudioSender.prototype.send = function(stream, callback) {
 
         if (this.encodedRingBuffer.available_read() > 0) {
             // console.log("DEBUG: Sender encodedRingBuffer Buffer full, sending:" + this.encodedRingBuffer.available_read());
-            this.encodedRingBuffer.pop(buf);
+            let buf = transcoder.compoundPacketFromBuffer(this.encodedRingBuffer, this.outputBufferLength);
 	    callback(buf);
 	} else {
             // console.debug("DEBUG: Sender encodedRingBuffer still filling, length:" + this.encodedRingBuffer.available_read());
