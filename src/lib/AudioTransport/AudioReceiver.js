@@ -20,7 +20,7 @@ function URLFromFiles(files) {
 }
 
 function AudioReceiver(audioContext) {
-    let bufferLengthInMs = 240;
+    let bufferLengthInMs = 80;
     let frameDurationMs = 5;
     let bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
     this.frameSize = audioContext.sampleRate / (1000 / frameDurationMs);
