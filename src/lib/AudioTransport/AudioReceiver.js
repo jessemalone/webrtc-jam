@@ -2,6 +2,7 @@
 // pipe audio to that stream
 
 import { RingBuffer } from 'ringbuf.js';
+import { compoundPacketFromBuffer } from './Transcoder'
 import Worker from "./worker/opus-encoding-worker.worker.js";
 
 function URLFromFiles(files) {
@@ -117,18 +118,22 @@ AudioReceiver.prototype.receiveAudioSamples = function(blob) {
     // (samples come in as a blob and must be converted to arraybuffer
     new Response(blob).arrayBuffer().then((buf) => {
         // console.log("DEBUG: AudioReceiver got input");
-	let samples = new Uint8Array(buf);
+	let compoundPacket = new Uint8Array(buf);
 	// this.averageReceivedSampleLength = this.getAverageReceivedLength(samples.length)
 
         // YOU ARE HERE MARCH 13: Probably need buffer size optimization
-        while ( this.inputRingBuffer.available_write() < samples.length ) {
-            console.debug("DEBUG: AudioReceiver.receiveAudioSamples: buffer overrun, waiting. len:" + this.inputRingBuffer.available_write() + "samples: " + samples.length);
-        }
-	if (this.inputRingBuffer.available_write() >= samples.length) {
-	    this.inputRingBuffer.push(samples);
-	} else {
-            console.debug("DEBUG: AudioReceiver.receiveAudioSamples: buffer overrun, waiting. len:" + this.inputRingBuffer.available_write() + "samples: " + samples.length);
-        }
+        // while ( this.inputRingBuffer.available_write() < samples.length ) {
+        //     console.debug("DEBUG: AudioReceiver.receiveAudioSamples: buffer overrun, waiting. len:" + this.inputRingBuffer.available_write() + "samples: " + samples.length);
+        // }
+        const availableWrite = this.inputRingBuffer.available_write();
+        this.inputRingBuffer.push(compoundPacket.slice(0,availableWrite));
+	// if (this.inputRingBuffer.available_write() >= buf.length) {
+	//     this.inputRingBuffer.push(buf.slice);
+	// } else {
+        //     // drop the packet
+	//     this.inputRingBuffer.push(compoundPacketFromBuffer(samples, this.inputRingBuffer.available_write());
+        //     console.debug("DEBUG: AudioReceiver.receiveAudioSamples: buffer overrun, waiting. len:" + this.inputRingBuffer.available_write() + "samples: " + samples.length);
+        // }
 	// else if (this.ringBuffer.available_write() <= 2*this.averageReceivedSampleLength) {
 	//     // console.log("DEBUG: Buffer overrun - growing buffer");
 	//     // console.log("DEBUG: samples length" + String(samples.length));

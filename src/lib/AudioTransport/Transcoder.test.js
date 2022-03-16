@@ -172,9 +172,6 @@ describe('compoundPacketFromBuffer', () => {
 
             expect(sampleEncodedRingBuf.available_read()).toBe(samplePacketLen + 2);
 
-            // the last packet should be decodeable and be audible
-            let lastPacketBuf = new Uint8Array(samplePacketLen + 2);
-
             // Decode the last packet
             let decodedBuf = RingBuffer.getStorageForCapacity(frameSize, Float32Array);
             let decodedRingBuf = new RingBuffer(decodedBuf, Float32Array);

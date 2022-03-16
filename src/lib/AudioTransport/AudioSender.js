@@ -97,7 +97,7 @@ AudioSender.prototype.send = function(stream, callback) {
 	} else {
             // console.debug("DEBUG: Sender encodedRingBuffer still filling, length:" + this.encodedRingBuffer.available_read());
         }
-    }, 0);
+    }, 5);
 };
 
 
