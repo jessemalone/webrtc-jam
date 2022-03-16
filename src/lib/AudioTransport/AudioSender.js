@@ -68,11 +68,6 @@ AudioSender.prototype.initialize = function() {
 }
 AudioSender.prototype.send = function(stream, callback) {
 
-    // YOU ARE HERE March 13 2022: There are (probably) alignment problems since
-    // this buf doesn't conform to packet boundaries. Find a way to send only
-    // complete packets
-    // let buf = new Uint8Array(this.outputBufferLengthInSamples);
-
     // connect the processor to mediaStreamSource
     let mediaStreamSource = this.context.createMediaStreamSource(stream);
     mediaStreamSource.connect(this.worklet);

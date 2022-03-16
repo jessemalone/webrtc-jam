@@ -157,7 +157,6 @@ describe('compoundPacketFromBuffer', () => {
             let decodedBuf = RingBuffer.getStorageForCapacity(numPackets * frameSize, Float32Array);
             let decodedRingBuf = new RingBuffer(decodedBuf, Float32Array);
             transcoder.decodeBuffer(compoundRingBuf, decodedRingBuf);
-            console.log("cp: " +compoundPacket);
 
             // Decoded audio should be shorter than the original, since one packet was
             // incomplete
@@ -171,7 +170,20 @@ describe('compoundPacketFromBuffer', () => {
         test("It leaves leftover packets in the original buffer", () => {
             let compoundPacket = compoundPacketFromBuffer(sampleEncodedRingBuf, sampleEncodedRingBuf.available_read() - 1);
 
-            expect(sampleEncodedRingBuf.available_read()).toBe(samplePacketLen);
+            expect(sampleEncodedRingBuf.available_read()).toBe(samplePacketLen + 2);
+
+            // the last packet should be decodeable and be audible
+            let lastPacketBuf = new Uint8Array(samplePacketLen + 2);
+
+            // Decode the last packet
+            let decodedBuf = RingBuffer.getStorageForCapacity(frameSize, Float32Array);
+            let decodedRingBuf = new RingBuffer(decodedBuf, Float32Array);
+            let decodedAudio = new Float32Array(numPackets*frameSize);
+            transcoder.decodeBuffer(sampleEncodedRingBuf,decodedRingBuf);
+
+            // Decoded audio should still be audible
+            decodedRingBuf.pop(decodedAudio);
+            expect(fftMatch(testAudio, decodedAudio, sampleRate, 4)).toBe(true);
         });
 
     });

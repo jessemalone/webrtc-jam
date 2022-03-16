@@ -30,6 +30,25 @@ function floatsToInts(buf) {
     return result;
 }
 
+
+// Peer inside a ring buffer without altering it.
+function peek(ringBuffer, buf, length, offset = 0) {
+    const rd = ringBuffer.read_ptr[0];
+    const wr = ringBuffer.write_ptr[0];
+
+    if (wr === rd || ringBuffer.available_read() < length) {
+        return buf;
+    }
+
+    const first_part = Math.min(ringBuffer._storage_capacity() - rd, length);
+    const second_part = length - first_part;
+
+    ringBuffer._copy(ringBuffer.storage, rd, buf, offset, first_part);
+    ringBuffer._copy(ringBuffer.storage, 0,  buf, offset + first_part, second_part);
+
+    return buf;
+}
+
 function compoundPacketFromBuffer(encodedRingBuffer, length) {
     if (encodedRingBuffer.available_read() < 2) {
         return new Uint8Array(0);
@@ -39,16 +58,14 @@ function compoundPacketFromBuffer(encodedRingBuffer, length) {
 
     let i = 0;
     while (i+2 < length && 2 <= encodedRingBuffer.available_read()) {
-        encodedRingBuffer.pop(outputBuffer, 2, i);
+        peek(encodedRingBuffer, outputBuffer, 2, i);
         let packetLenBytes = outputBuffer.slice(i,i+2);
-        let packetLen = new Int16Array(packetLenBytes.buffer)[0];
-        i += 2;
+        let packetLen = new Int16Array(packetLenBytes.buffer)[0] + 2;
 
         if (i + packetLen < length && packetLen <= encodedRingBuffer.available_read()) {
             encodedRingBuffer.pop(outputBuffer,packetLen,i);
             i += packetLen;
         } else {
-            i -= 2;
             break;
         }
     }
