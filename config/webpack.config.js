@@ -361,7 +361,9 @@ module.exports = function (webpackEnv) {
           {
               test: /\.worker\.js$/,
               use: [
-                  {loader: "worker-loader",},
+                  {
+                      loader: "worker-loader",
+                  },
               ],
           },
         // Disable require.ensure as it's not a standard language feature.
@@ -721,6 +723,11 @@ module.exports = function (webpackEnv) {
 		{
 		    from: "node_modules/ringbuf.js/dist/index.js",
 		    to: "static/js/ringbuf.js",
+		    force: true
+		},
+		{
+		    from: "node_modules/opusscript/build/opusscript_native_wasm.wasm",
+		    to: "static/js/wasm/opusscript_native_wasm.wasm",
 		    force: true
 		},
 	    ]
