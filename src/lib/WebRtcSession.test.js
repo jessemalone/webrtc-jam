@@ -1,16 +1,24 @@
 import {Signaller} from './Signaller'
 import {Message} from './Message'
-import {WebRtcSession} from './WebRtcSession'
+import * as webrtcsession from './WebRtcSession'
 import {Peer} from './Peer'
 
+let WebRtcSession = webrtcsession.WebRtcSession;
 let peerConnections;
 let mockPeerConnection;
 let mockSignaller;
 let mockStream;
+let mockAudioTransport;
+let mockAudioTransportPromise;
 let options = {};
 let sessionRoomId = 'sessionroomid'
+let mockMediaStreamSource = "expected MediaStreamSource";
+let mockMediaStreamDestination = {stream: "expected MediaStreamDestination"};
+let workletProcessorPromise = Promise.resolve("unused");
+var AudioContext;
 
 beforeEach(() => {
+
     mockPeerConnection = {};
     mockSignaller = {
         send: jest.fn((obj) => {}),
@@ -18,8 +26,34 @@ beforeEach(() => {
     };
     mockPeerConnection.setRemoteDescription = jest.fn((obj) => {});
 
+    mockAudioTransport = {
+        addStream: jest.fn((stream) => {}),
+        addStreamHandler: jest.fn((callback) => {
+            callback(mockMediaStreamDestination);
+        }),
+        close: jest.fn(() => {})
+    };
+    mockAudioTransportPromise = Promise.resolve(mockAudioTransport);
+    webrtcsession.createAudioTransport = jest.fn((pc,ctx) => mockAudioTransportPromise);
+
+    let mockAudioContext = {
+        audioWorklet: {
+            addModule: jest.fn((srcfile) => {
+                return workletProcessorPromise;
+            }),
+        },
+        createMediaStreamDestination:
+        jest.fn(() => mockMediaStreamDestination),
+        createMediaStreamSource:
+        jest.fn((stream) => mockMediaStreamSource),
+    };
+
+    window.AudioContext = function(options) {
+        return mockAudioContext;
+    };
+
     peerConnections = [
-        new Peer('sender', mockPeerConnection),
+        new Peer('sender', mockPeerConnection, mockAudioTransport),
         new Peer('another', {})
     ];
 });
@@ -99,14 +133,19 @@ describe('WebRtcSession.offerHandler', () => {
     test('It adds the peer connection to the webrtc session', () => {
         let handler = webRtcSession.getOfferHandler();
         handler(message);
-        expect(peerConnections.length).toBe(3);
+
+        return mockAudioTransportPromise.finally(p => {
+            expect(peerConnections.length).toBe(3);
+        });
     });
 
     test('It sets the remote description on the right peer connection', () => {
         let handler = webRtcSession.getOfferHandler();
         handler(message);
-        expect(mockPeerConnection.setRemoteDescription.mock.calls.length).toBe(1);
-        expect(mockPeerConnection.setRemoteDescription.mock.calls[0][0]).toBe(expected_data);
+        return mockAudioTransportPromise.finally( p => {
+            expect(mockPeerConnection.setRemoteDescription.mock.calls.length).toBe(1);
+            expect(mockPeerConnection.setRemoteDescription.mock.calls[0][0]).toBe(expected_data);
+        });
     });
 
     test('It sets the local description on the right peer connection', () => {
@@ -117,7 +156,7 @@ describe('WebRtcSession.offerHandler', () => {
             expect(mockPeerConnection.setLocalDescription.mock.calls.length).toBe(1);
             expect(mockPeerConnection.setLocalDescription.mock.calls[0][0]).toBe("answer");
         };
-        return mockAnswerPromise.finally(checkPromise);
+        return mockAudioTransportPromise.finally( p => mockAnswerPromise.finally(checkPromise));
     });
 
     test('It sends an answer', () => {
@@ -129,28 +168,32 @@ describe('WebRtcSession.offerHandler', () => {
             expect(mockSignaller.send.mock.calls.length).toBe(1);
             expect(mockSignaller.send.mock.calls[0][0]).toMatchObject(expected_message);
         };
-        return mockAnswerPromise.finally(checkPromise);
-
+        return mockAudioTransportPromise.finally( p => mockAnswerPromise.finally(checkPromise));
     });
 
     test('It adds a stream', () => {
         let handler = webRtcSession.getOfferHandler();
         handler(message);
-        expect(mockPeerConnection.addStream.mock.calls.length).toBe(1);
-        expect(mockPeerConnection.addStream.mock.calls[0][0]).toBe(mockStream);
+        return mockAudioTransportPromise.finally((p) => {
+            expect(mockAudioTransport.addStream.mock.calls.length).toBe(1);
+            expect(mockAudioTransport.addStream.mock.calls[0][0]).toBe(mockStream);
+        });
     });
 
     test('It sets up the remote stream handler', () => {
         let mockStreamHandler = jest.fn((obj) => {});
-        let expected_event = {peerId: 'sender', stream: 'stream'};
+        let expected_event = {peerId: 'sender', stream: mockMediaStreamDestination.stream};
+        let expected_stream_handler = message.sender_guid;
 
         webRtcSession.onaddstream = mockStreamHandler;
         let handler = webRtcSession.getOfferHandler();
         handler(message);
 
-        mockPeerConnection.onaddstream({stream: "stream"});
-        expect(mockStreamHandler.mock.calls.length).toBe(1);
-        expect(mockStreamHandler.mock.calls[0][0]).toMatchObject(expected_event);
+        return mockAudioTransportPromise.finally((p) => {
+            expect(mockAudioTransport.addStreamHandler.mock.calls.length).toBe(1);
+            expect(mockStreamHandler.mock.calls.length).toBe(1);
+            expect(mockStreamHandler.mock.calls[0][0]).toMatchObject(expected_event);
+        });
     });
 });
 
@@ -179,13 +222,19 @@ describe('WebRtcSession.announceHandler', () => {
     test('It adds the peer connection to the webrtc session', () => {
         let handler = webRtcSession.getAnnounceHandler();
         handler(message);
-        expect(peerConnections.length).toBe(3);
+
+        return mockAudioTransportPromise.finally((p) => {
+            expect(peerConnections.length).toBe(3);
+        });
     });
     test('It adds a stream', () => {
         let handler = webRtcSession.getAnnounceHandler();
         handler(message);
-        expect(mockPeerConnection.addStream.mock.calls.length).toBe(1);
-        expect(mockPeerConnection.addStream.mock.calls[0][0]).toBe(mockStream);
+
+        return mockAudioTransportPromise.finally((p) => {
+            expect(mockAudioTransport.addStream.mock.calls.length).toBe(1);
+            expect(mockAudioTransport.addStream.mock.calls[0][0]).toBe(mockStream);
+        });
     });
     test('It sends an offer', () => {
         let handler = webRtcSession.getAnnounceHandler();
@@ -196,7 +245,7 @@ describe('WebRtcSession.announceHandler', () => {
             expect(mockSignaller.send.mock.calls.length).toBe(1);
             expect(mockSignaller.send.mock.calls[0][0]).toMatchObject(expected_message);
         };
-        return mockOfferPromise.finally(checkPromise);
+        return mockAudioTransportPromise.finally( p => mockOfferPromise.finally(checkPromise));
     });
     test('It sets the local description on the peer connection', () => {
         let handler = webRtcSession.getAnnounceHandler();
@@ -207,7 +256,7 @@ describe('WebRtcSession.announceHandler', () => {
             expect(mockPeerConnection.setLocalDescription.mock.calls.length).toBe(1);
             expect(mockPeerConnection.setLocalDescription.mock.calls[0][0]).toBe(expected_offer);
         };
-        return mockOfferPromise.finally(checkPromise);
+        return mockAudioTransportPromise.finally( p => mockOfferPromise.finally(checkPromise));
     });
 });
 
@@ -266,6 +315,12 @@ describe('WebRtcSession.handleHangup', () => {
         expect(peerConnections.length).toBe(1);
         expect(peerConnections[0].id).toBe('another');
         expect(mockPeer.connection.close.mock.calls.length).toBe(1);
+    });
+    test('It tears down the audioTransport', () => {
+        let handler = webRtcSession.getHangupHandler();
+        handler(message);
+        expect(peerConnections.length).toBe(1);
+        expect(mockAudioTransport.close.mock.calls.length).toBe(1);
     });
 });
 

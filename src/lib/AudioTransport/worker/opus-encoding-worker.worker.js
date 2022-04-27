@@ -16,6 +16,9 @@ var encoder
 var transcoder
 var running = false;
 
+if (onmessage == undefined) {
+    var onmessage;
+}
 onmessage = (e) => {
     if (e.data.type == "init") {
         console.log("DEBUG: opus encoding worker - init started");

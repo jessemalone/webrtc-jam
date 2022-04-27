@@ -21,6 +21,15 @@ function URLFromFiles(files) {
     });
 }
 
+// YOU ARE HERE: March 14 - Data Channel is working but startup
+//               is unreliable, needs investigation. Then need to
+//               tune buffer/frame sizes to find out what's optimal
+//
+//               Also consider using requestAnimationFrame() instead of setInterval
+//               to control the send loop
+//
+//               There's also a bug in compoundPacketFromBuffer - it leaves the trailing
+//               packet without a length. Need to put the length back after reading
 function AudioSender(audioContext) {
     let bufferLengthInMs = 20;
     let frameDurationMs = 10;
@@ -83,13 +92,14 @@ AudioSender.prototype.send = function(stream, callback) {
         }
     });
 
-    setInterval(() => {
-        // TODO: YOU ARE HERE March 11: it gets stuck waiting for available write.
-        //                               Somehow the buffer never drains completely
-        //               Maybe some synchronization with the encoding worker - where
-        //               it sends a signal when it's filled the buffer
-        // console.log("DEBUG: AudioSender send interval, available_read(): " + this.encodedRingBuffer.available_read());
+    this.interval = setInterval(() => {
+        // TODO: consider looping this to deal with unreliable setInterval
+        //       in background tabs. There's definitely a way, zoom uses datachannel
+        //       and works in the background
 
+        // Or try recursively calling Promises: And/or try requestAnihttps://jakearchibald.com/2015/tasks-microtasks-queues-and-schedules/mationFrame
+        // Hmmm playing back audio even with volume down seems to get around this too, so maybe mute
+        // should not ever stop playback, just lower volume
         if (this.encodedRingBuffer.available_read() > 0) {
             // console.log("DEBUG: Sender encodedRingBuffer Buffer full, sending:" + this.encodedRingBuffer.available_read());
             let buf = transcoder.compoundPacketFromBuffer(this.encodedRingBuffer, this.outputBufferLength);
@@ -100,5 +110,11 @@ AudioSender.prototype.send = function(stream, callback) {
     }, 5);
 };
 
+
+AudioSender.prototype.stop = function() {
+    // YOU ARE HERE March 21 2022: need to stop sending when the datachannel closes. This
+    // probably gets called from webrtcsession, or DataChannelAudioTransport
+    clearInterval(this.interval)
+}
 
 export {AudioSender}

@@ -1,12 +1,35 @@
 // This object provides methods to be called from WebRtcSession
 // to add local streams or receive remote streams with an
 // an implementation based on RTC data channels
-function DataChannelAudioTransport(peerConnection, audioSender, audioReceiver) {
-    this.peerConnection = peerConnection;
-    this.audioSender = audioSender;
-    this.audioReceiver = audioReceiver;
 
-    this.mediaStreamDestination = this.audioReceiver.getMediaStreamDestination();
+import {AudioReceiver} from './AudioReceiver'
+import {AudioSender} from './AudioSender'
+
+function createAudioSender(audioContext) {
+    return new AudioSender(audioContext);
+}
+
+function createAudioReceiver() {
+    return new AudioReceiver(audioContext);
+}
+
+function DataChannelAudioTransport(peerConnection, audioContext) {
+    this.peerConnection = peerConnection;
+
+    // Using exports. in order to mock these
+    let audioSenderPromise = exports.createAudioSender(audioContext);
+    let audioReceiverPromise = exports.createAudioReceiver(audioContext);
+
+    let promise = new Promise((resolve, reject) => {
+        Promise.all([audioSenderPromise, audioReceiverPromise]).then(p => {
+            this.audioSender = p[0]
+            this.audioReceiver = p[1]
+     //       this.mediaStreamDestination = this.audioReceiver.getMediaStreamDestination();
+            resolve(this);
+        })
+    });
+
+    return promise;
 };
 
 DataChannelAudioTransport.prototype.addStreamHandler = function(callback) {
@@ -20,21 +43,27 @@ DataChannelAudioTransport.prototype.addStreamHandler = function(callback) {
 	event.channel.onmessage = (event) => this.handleMessage(event);
     };
 
-    callback(this.mediaStreamDestination);
+    callback(this.audioReceiver.getMediaStreamDestination());
 };
 
 // pass the stream to the audioSender, send resulting data to the datachannel
 DataChannelAudioTransport.prototype.addStream = function(stream) {
-    // DUH forgot to wait for "onopen" https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/createDataChannel#examples
-    let dataChannel = this.peerConnection.createDataChannel("stream");
-    // TODO: You are here May 11, is the anonymous call back not persisted? Perhaps define the callback on the datachannel object
-    dataChannel.onopen = (e) => {
+    if (undefined !== this.dataChannel) {
+        throw new Error("Multiple streams not implemented");
+    }
+
+    this.dataChannel = this.peerConnection.createDataChannel("stream");
+    this.dataChannel.onopen = (e) => {
         console.log("DEBUG: DataChannelAudioTransport - got onopen");
-	this.audioSender.send(stream,function(data) {
-	    dataChannel.send(data);
+	this.audioSender.send(stream,(data) => {
+	    this.dataChannel.send(data);
 	});
     };
 };
+
+DataChannelAudioTransport.prototype.close = function() {
+    this.audioSender.stop();
+}
 
 DataChannelAudioTransport.prototype.handleMessage = function(message) {
     // console.log("DEBUG: DataChannelAudioTransport.handleMessage");
@@ -42,4 +71,4 @@ DataChannelAudioTransport.prototype.handleMessage = function(message) {
 };
 
 
-export {DataChannelAudioTransport}
+export {createAudioSender, createAudioReceiver, DataChannelAudioTransport}

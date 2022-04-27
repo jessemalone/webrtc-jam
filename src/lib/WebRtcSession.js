@@ -4,6 +4,10 @@ import {DataChannelAudioTransport} from './AudioTransport/DataChannelAudioTransp
 import {AudioReceiver} from './AudioTransport/AudioReceiver'
 import {AudioSender} from './AudioTransport/AudioSender'
 
+function createAudioTransport(peerConnection, audioContext) {
+    return new DataChannelAudioTransport(peerConnection, audioContext);
+}
+
 function WebRtcSession(channelId, stream, signaller, options) {
     this.signaller = signaller;
     this.localStream = stream;
@@ -54,6 +58,12 @@ WebRtcSession.prototype.getOfferHandler = function() {
         console.log(offer);
 
 
+        // Create peer connection
+        let newPeerConnection = that.createPeer(function(event) {
+            // TODO: this should be implicit in createPeer
+            console.log("offer sending ICE");
+            that.signaller.send(new Message("ice", event.candidate, "", message.sender_guid, that.channelId));
+        });
 
         // TODO: Replace with addTrack - addStream is deprecated
         //newPeerConnection.addStream(that.localStream);
@@ -61,18 +71,11 @@ WebRtcSession.prototype.getOfferHandler = function() {
 
         // Set up remote stream handler
         //newPeerConnection.onaddstream = that.createRemoteStreamHandlerFor(message.sender_guid);
-	let ctx = new AudioContext({latencyHint: "interactive", sampleRate: 48000});
-	let audioReceiverPromise = new AudioReceiver(ctx);
-	let audioSenderPromise = new AudioSender(ctx);
+	let ctx = new AudioContext({latencyHint: 0, sampleRate: 48000});
 
-	Promise.all([audioReceiverPromise,audioSenderPromise]).then(p => {
+        let audioTransportPromise = exports.createAudioTransport(newPeerConnection, ctx);
+        audioTransportPromise.then(audioTransport => {
 	    console.log("DEBUG: adio resady");
-	    // Create peer connection
-	    let newPeerConnection = that.createPeer(function(event) {
-		// TODO: this should be implicit in createPeer
-		console.log("offer sending ICE");
-		that.signaller.send(new Message("ice",event.candidate,"",message.sender_guid,that.channelId));
-	    });
 	    // set the offer and answer handler
 	    newPeerConnection.setRemoteDescription(offer);
 	    newPeerConnection.createAnswer().then(function(answer) {
@@ -81,14 +84,11 @@ WebRtcSession.prototype.getOfferHandler = function() {
 		that.signaller.send(new Message("answer",answer,"",message.sender_guid,that.channelId));
 	    });
 
-	    let audioReceiver = p[0];
-	    let audioSender = p[1];
-	    let audioTransport = new DataChannelAudioTransport(newPeerConnection, audioSender, audioReceiver)
 	    audioTransport.addStream(that.localStream);
 	    audioTransport.addStreamHandler(that.createRemoteStreamHandlerFor(message.sender_guid));
 
 	    // Add to the peer list
-	    let newPeer = new Peer(message.sender_guid, newPeerConnection);
+	    let newPeer = new Peer(message.sender_guid, newPeerConnection, audioTransport);
 	    that.peerConnections.push(newPeer);
 	});
 
@@ -100,25 +100,23 @@ WebRtcSession.prototype.getAnnounceHandler = function() {
     return function(message) {
         console.log("GOT ANNOUNCE");
 
+        // Create peer connection
+        let newPeerConnection = that.createPeer(function(event) {
+            console.log("announce sending ICE");
+            that.signaller.send(new Message("ice", event.candidate, "", message.sender_guid, that.channelId))
+        });
         // TODO: This is where the data channel would go?
         // Add the local stream
         // (This needs to be added before creating and sending answer)
         // Add local stream to the connection
         //newPeerConnection.addStream(that.localStream);
-	let ctx = new AudioContext({latencyHint: "interactive", sampleRate: 48000});
-	let audioReceiverPromise = new AudioReceiver(ctx);
-	let audioSenderPromise = new AudioSender(ctx);
-	Promise.all([audioReceiverPromise,audioSenderPromise]).then(p => {
-	    console.log("DEBUG: announce adio resady");
-	    // Create peer connection
-	    let newPeerConnection = that.createPeer(function(event) {
-		console.log("announce sending ICE");
-		that.signaller.send(new Message("ice",event.candidate,"",message.sender_guid,that.channelId))
-	    });
+	let ctx = new AudioContext({latencyHint: 0, sampleRate: 48000});
 
-	    let audioReceiver = p[0];
-	    let audioSender = p[1];
-	    let audioTransport = new DataChannelAudioTransport(newPeerConnection, audioSender, audioReceiver)
+        let audioTransportPromise = exports.createAudioTransport(newPeerConnection, ctx);
+        audioTransportPromise.then(audioTransport => {
+	    console.log("DEBUG: announce adio resady");
+	    console.log("DEBUGGG: GOT TRANSPORT");
+
 	    audioTransport.addStream(that.localStream);
 	    audioTransport.addStreamHandler(that.createRemoteStreamHandlerFor(message.sender_guid));
 
@@ -130,7 +128,7 @@ WebRtcSession.prototype.getAnnounceHandler = function() {
 		});
 
 	    // Add the peer to the peer list
-	    let newPeer = new Peer(message.sender_guid, newPeerConnection);
+	    let newPeer = new Peer(message.sender_guid, newPeerConnection, audioTransport);
 	    that.peerConnections.push(newPeer);
 	});
 
@@ -163,6 +161,7 @@ WebRtcSession.prototype.getHangupHandler = function() {
         // Remove the peer connection
         let peerIndex = that.peerConnections.findIndex( peer => peer.id === peerId);
         if (that.peerConnections[peerIndex]) {
+            that.peerConnections[peerIndex].audioTransport.close();
             that.peerConnections[peerIndex].connection.close();
             that.peerConnections.splice(peerIndex, 1);
         }
@@ -201,4 +200,4 @@ WebRtcSession.prototype.getStats = function(peerId) {
     }
 }
 
-export {WebRtcSession}
+export {createAudioTransport, WebRtcSession}
