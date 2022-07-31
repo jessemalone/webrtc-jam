@@ -68,6 +68,15 @@ AudioSender.prototype.initialize = function() {
 	data: this.decodedSharedBuffer
     });
 
+    // start the encoding worker when it's ready
+    this.worker.addEventListener('message', (e) => {
+        console.debug("DEBUG: got message from encoding worker " + e.data);
+        if (e.data.type == "ready" && e.data.value == true) {
+            console.log("Encoding worker ready");
+            this.worker.postMessage({type: "encode"})
+            console.log("Start encoding");
+        }
+    });
 
     this.worker.postMessage({
         type: "init",
@@ -84,18 +93,6 @@ AudioSender.prototype.send = function(stream, callback) {
     let mediaStreamSource = this.context.createMediaStreamSource(stream);
     mediaStreamSource.connect(this.worklet);
 
-    // start the encoding worker
-    // TODO: JULY 30 2022 - YOU ARE HERE
-    // This setup is probably too late, should probably be in setup in init() **before**
-    // posting "init" to the worker
-    this.worker.addEventListener('message', (e) => {
-        console.debug("DEBUG: got message from encoding worker " + e.data);
-        if (e.data.type == "ready" && e.data.value == true) {
-            console.log("Encoding worker ready");
-            this.worker.postMessage({type: "encode"})
-            console.log("Start encoding");
-        }
-    });
 
     this.interval = setInterval(() => {
         // TODO: July 31 2022 - You are here. Relying on setInterval is a huge problem.
