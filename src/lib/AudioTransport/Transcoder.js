@@ -77,7 +77,6 @@ function compoundPacketFromBuffer(encodedRingBuffer, length) {
   Pull all complete packets off the inputbuffer and decode into the output
   buffer, stopping if the output buffer is full
 */
-let i = 0
 Transcoder.prototype.decodeBuffer = function(inputRingBuffer, outputRingBuffer) {
     // let decoded = this.encoder.decode(buf);
     // i++;

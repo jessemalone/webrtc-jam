@@ -73,7 +73,7 @@ WebRtcSession.prototype.getOfferHandler = function() {
         //newPeerConnection.onaddstream = that.createRemoteStreamHandlerFor(message.sender_guid);
 	let ctx = new AudioContext({latencyHint: 0, sampleRate: 48000});
 
-        let audioTransportPromise = exports.createAudioTransport(newPeerConnection, ctx);
+        let audioTransportPromise = createAudioTransport(newPeerConnection, ctx);
         audioTransportPromise.then(audioTransport => {
 	    console.log("DEBUG: adio resady");
 	    // set the offer and answer handler
@@ -112,7 +112,7 @@ WebRtcSession.prototype.getAnnounceHandler = function() {
         //newPeerConnection.addStream(that.localStream);
 	let ctx = new AudioContext({latencyHint: 0, sampleRate: 48000});
 
-        let audioTransportPromise = exports.createAudioTransport(newPeerConnection, ctx);
+        let audioTransportPromise = createAudioTransport(newPeerConnection, ctx);
         audioTransportPromise.then(audioTransport => {
 	    console.log("DEBUG: announce adio resady");
 	    console.log("DEBUGGG: GOT TRANSPORT");
@@ -144,7 +144,7 @@ WebRtcSession.prototype.getIceCandidateHandler = function() {
         let peer = that.peerConnections.find( peer => peer.id === message.sender_guid);
 
         // Add the ice candidate to the peer connection
-        if (candidate != null) {
+        if (candidate != null && peer != null) {
             var rtcIceCandidate = that.createRTCIceCandidate(candidate);
             peer.connection.addIceCandidate(rtcIceCandidate);
         }

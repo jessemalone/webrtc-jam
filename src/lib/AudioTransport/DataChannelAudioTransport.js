@@ -9,7 +9,7 @@ function createAudioSender(audioContext) {
     return new AudioSender(audioContext);
 }
 
-function createAudioReceiver() {
+function createAudioReceiver(audioContext) {
     return new AudioReceiver(audioContext);
 }
 
@@ -17,14 +17,15 @@ function DataChannelAudioTransport(peerConnection, audioContext) {
     this.peerConnection = peerConnection;
 
     // Using exports. in order to mock these
-    let audioSenderPromise = exports.createAudioSender(audioContext);
-    let audioReceiverPromise = exports.createAudioReceiver(audioContext);
+    let audioSenderPromise = createAudioSender(audioContext);
+    let audioReceiverPromise = createAudioReceiver(audioContext);
 
     let promise = new Promise((resolve, reject) => {
         Promise.all([audioSenderPromise, audioReceiverPromise]).then(p => {
             this.audioSender = p[0]
             this.audioReceiver = p[1]
-     //       this.mediaStreamDestination = this.audioReceiver.getMediaStreamDestination();
+            // TODO: REMOVE - NOT USED ANYMORE
+            //this.mediaStreamDestination = this.audioReceiver.getMediaStreamDestination();
             resolve(this);
         })
     });

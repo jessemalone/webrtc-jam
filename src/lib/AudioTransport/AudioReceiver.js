@@ -29,7 +29,7 @@ function AudioReceiver(audioContext) {
 
     this.context = audioContext;
     console.log("=========AUDIO CONTEXT");
-    console.log(this.context);
+    // console.log(this.context);  // 
     this.mediaStreamDestination = audioContext.createMediaStreamDestination();
     this.averageReceivedSampleLength = bufferLengthInSamples;
 
@@ -61,6 +61,7 @@ function AudioReceiver(audioContext) {
 
                     // start decoding
                     this.worker.addEventListener('message', (e) => {
+                        console.debug("DEBUG: got message from decoding worker " + e.data.type + " " + e.data.value);
                         if (e.data.type == "ready" && e.data.value == true) {
                             console.log("Decoding worker ready");
                             this.worker.postMessage({type: "decode"});
@@ -69,8 +70,7 @@ function AudioReceiver(audioContext) {
                     });
 		    resolve(this);
 		} catch (err) {
-		    console.log("ERROR +=====");
-		    console.log(err);
+		    console.log("ERROR: ", err);
 		    reject(err);
 		}
 	    });

@@ -6,6 +6,7 @@ import { RingBuffer } from 'ringbuf.js';
 import Worker from "./worker/opus-encoding-worker.worker.js";
 import * as transcoder from './Transcoder';
 
+
 function URLFromFiles(files) {
   const promises = files
     .map((file) => fetch(file)
@@ -31,8 +32,8 @@ function URLFromFiles(files) {
 //               There's also a bug in compoundPacketFromBuffer - it leaves the trailing
 //               packet without a length. Need to put the length back after reading
 function AudioSender(audioContext) {
-    let bufferLengthInMs = 20;
-    let frameDurationMs = 10;
+    let bufferLengthInMs = 240;
+    let frameDurationMs = 5;
     this.outputBufferLength = 240;
 
     this.bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
@@ -52,6 +53,7 @@ function AudioSender(audioContext) {
 };
 
 AudioSender.prototype.initialize = function() {
+    // The audio worklet puts raw audio from the mic into a buffer
     this.worklet = new AudioWorkletNode(this.context, 'sender-worklet-processor');
     this.decodedSharedBuffer = RingBuffer.getStorageForCapacity(this.bufferLengthInSamples, Float32Array);
     this.decodedRingBuffer = new RingBuffer(this.decodedSharedBuffer, Float32Array);
@@ -65,6 +67,7 @@ AudioSender.prototype.initialize = function() {
 	type: "send-buffer",
 	data: this.decodedSharedBuffer
     });
+
 
     this.worker.postMessage({
         type: "init",
@@ -81,10 +84,12 @@ AudioSender.prototype.send = function(stream, callback) {
     let mediaStreamSource = this.context.createMediaStreamSource(stream);
     mediaStreamSource.connect(this.worklet);
 
-    // start the encoder
+    // start the encoding worker
+    // TODO: JULY 30 2022 - YOU ARE HERE
+    // This setup is probably too late, should probably be in setup in init() **before**
+    // posting "init" to the worker
     this.worker.addEventListener('message', (e) => {
-        console.log("DEBUG: got message from worker");
-        console.log(e.data);
+        console.debug("DEBUG: got message from encoding worker " + e.data);
         if (e.data.type == "ready" && e.data.value == true) {
             console.log("Encoding worker ready");
             this.worker.postMessage({type: "encode"})
@@ -93,6 +98,7 @@ AudioSender.prototype.send = function(stream, callback) {
     });
 
     this.interval = setInterval(() => {
+        // TODO: July 31 2022 - You are here. Relying on setInterval is a huge problem.
         // TODO: consider looping this to deal with unreliable setInterval
         //       in background tabs. There's definitely a way, zoom uses datachannel
         //       and works in the background

@@ -16,12 +16,14 @@ var encoder
 var transcoder
 var running = false;
 
-if (onmessage == undefined) {
-    var onmessage;
-}
+// TODO july 31 2022 - is this more test specifics
+// breaking the browser?
+// if (onmessage == undefined) {
+//     var onmessage;
+// }
 onmessage = (e) => {
     if (e.data.type == "init") {
-        console.log("DEBUG: opus encoding worker - init started");
+        console.debug("DEBUG: opus encoding worker - init started");
         // Shared buffer with raw audio to be encoded
         // TODO: March 11 - Input/output have different types
         // depending on whether it's encoding or decoding! Duh.
