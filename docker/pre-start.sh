@@ -2,6 +2,7 @@
 
 # build the frontend app
 pushd /app/
+npm install
 npm run build
 popd
 # Start the signalling server before the container launches nginx
