@@ -49,7 +49,7 @@
     "jest-watch-typeahead": "0.6.1",
     "mini-css-extract-plugin": "0.11.3",
     "moment": "2.26.0",
-    "node-sass": "4.14.1",
+    "sass": "^1.54.0",
     "nouislider": "14.5.0",
     "optimize-css-assets-webpack-plugin": "5.0.4",
     "opusscript": "^0.0.8",
