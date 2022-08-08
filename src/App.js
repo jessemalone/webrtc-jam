@@ -74,7 +74,7 @@ class App extends React.Component {
             this.setState({roomId: ack.data.channel_id});
 
             // Redirect to the room
-            window.location = window.location + "r/" + ack.data.channel_id;
+            window.location = window.location + "r/" + ack.data.channel_id + "?SenderInputMS=240&ReceiverInputMS=120&SenderEncodedBytes=3048&SenderFrameMS=5";
         }
 
         this.handleCreateRoom = (event) => {

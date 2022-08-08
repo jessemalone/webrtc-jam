@@ -5,6 +5,17 @@ import { RingBuffer } from 'ringbuf.js';
 import { compoundPacketFromBuffer } from './Transcoder'
 import Worker from "./worker/opus-encoding-worker.worker.js";
 
+
+// TODO: This should be defined in common with AudioSender, (URLFromFiles too)
+function BufferParamsFromURL(urlstring) {
+    let url = new URL(urlstring)
+    return {
+        ReceiverInputMS: url.searchParams.get("ReceiverInputMS"), 
+        SenderEncodedBytes: url.searchParams.get("SenderEncodedBytes"), 
+        SenderFrameMS: url.searchParams.get("SenderFrameMS") 
+    }
+}
+
 function URLFromFiles(files) {
     const promises = files
 	  .map((file) => fetch(file)
@@ -21,8 +32,9 @@ function URLFromFiles(files) {
 }
 
 function AudioReceiver(audioContext) {
-    let bufferLengthInMs = 120;
-    let frameDurationMs = 5;
+    let bufferParams = BufferParamsFromURL(window.location.href);
+    let bufferLengthInMs = bufferParams.ReceiverInputMS;
+    let frameDurationMs = bufferParams.SenderFrameMS;
     let bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
     this.frameSize = audioContext.sampleRate / (1000 / frameDurationMs);
 

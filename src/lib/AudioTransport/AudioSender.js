@@ -6,6 +6,15 @@ import { RingBuffer } from 'ringbuf.js';
 import Worker from "./worker/opus-encoding-worker.worker.js";
 import * as transcoder from './Transcoder';
 
+// TODO: This should be defined in common with AudioReceiver, (URLFromFiles too)
+function BufferParamsFromURL(urlstring) {
+    let url = new URL(urlstring);
+    return {
+        SenderInputMS: url.searchParams.get("SenderInputMS"), 
+        SenderEncodedBytes: url.searchParams.get("SenderEncodedBytes"), 
+        SenderFrameMS: url.searchParams.get("SenderFrameMS") 
+    }
+}
 
 function URLFromFiles(files) {
   const promises = files
@@ -32,9 +41,10 @@ function URLFromFiles(files) {
 //               There's also a bug in compoundPacketFromBuffer - it leaves the trailing
 //               packet without a length. Need to put the length back after reading
 function AudioSender(audioContext) {
-    let bufferLengthInMs = 240;
-    let frameDurationMs = 5;
-    this.outputBufferLength = 3840; // Bytes of encoded audio
+    let bufferParams = BufferParamsFromURL(window.location.href);
+    let bufferLengthInMs = bufferParams.SenderInputMS;
+    let frameDurationMs = bufferParams.SenderFrameMS;
+    this.outputBufferLength = bufferParams.SenderEncodedBytes; // Bytes of encoded audio
 
     this.bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
     this.frameSize = audioContext.sampleRate / (1000 / frameDurationMs);
