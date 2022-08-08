@@ -34,7 +34,7 @@ function URLFromFiles(files) {
 function AudioSender(audioContext) {
     let bufferLengthInMs = 240;
     let frameDurationMs = 5;
-    this.outputBufferLength = 240;
+    this.outputBufferLength = 3840; // Bytes of encoded audio
 
     this.bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
     this.frameSize = audioContext.sampleRate / (1000 / frameDurationMs);

@@ -53,7 +53,7 @@ DataChannelAudioTransport.prototype.addStream = function(stream) {
         throw new Error("Multiple streams not implemented");
     }
 
-    this.dataChannel = this.peerConnection.createDataChannel("stream");
+    this.dataChannel = this.peerConnection.createDataChannel("stream", {maxRetransmits: 0});
     this.dataChannel.onopen = (e) => {
         console.log("DEBUG: DataChannelAudioTransport - got onopen");
 	this.audioSender.send(stream,(data) => {
