@@ -57,22 +57,32 @@ onmessage = (e) => {
 };
 
 function encode() {
-    while (running == true) {
-        try {
-            transcoder.encodeBuffer(decodedRingBuffer, encodedRingBuffer);
-        } catch (e) {
-            console.error("ERROR: Encoder error" + e);
-        }
+    // while (running == true) {
+    let i =    setInterval(() => {
+            try {
+                transcoder.encodeBuffer(decodedRingBuffer, encodedRingBuffer);
+            } catch (e) {
+                console.error("ERROR: Encoder error" + e);
+            }
+        }, 0);
+    // }                           // 
+    if (running != true) {
+        clearInterval(i);
     }
 }
 
 function decode() {
-    while (running == true) {
-        try {
-            transcoder.decodeBuffer(encodedRingBuffer, decodedRingBuffer);
-        } catch (e) {
-            console.error("ERROR: Decoder error" + e);
-        }
+    // while (running == true) {
+    let i = setInterval(() => {
+            try {
+                transcoder.decodeBuffer(encodedRingBuffer, decodedRingBuffer);
+            } catch (e) {
+                console.error("ERROR: Decoder error" + e);
+            }
+        }, 0);
+    if (running != true) {
+        clearInterval(i);
     }
+    // }
 }
 

@@ -116,11 +116,13 @@ AudioSender.prototype.send = function(stream, callback) {
         if (this.encodedRingBuffer.available_read() > 0) {
             // console.log("DEBUG: Sender encodedRingBuffer Buffer full, sending:" + this.encodedRingBuffer.available_read());
             let buf = transcoder.compoundPacketFromBuffer(this.encodedRingBuffer, this.outputBufferLength);
-	    callback(buf);
-	} else {
-            // console.debug("DEBUG: Sender encodedRingBuffer still filling, length:" + this.encodedRingBuffer.available_read());
+            callback(buf);
         }
-    }, 5);
+        // else {
+
+        //     console.debug("DEBUG: Sender encodedRingBuffer still filling, length:" + this.encodedRingBuffer.available_read());
+        // }
+    }, 0);
 };
 
 
