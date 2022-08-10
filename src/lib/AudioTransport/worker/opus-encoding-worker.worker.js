@@ -61,14 +61,16 @@ function encode() {
     let i =    setInterval(() => {
             try {
                 transcoder.encodeBuffer(decodedRingBuffer, encodedRingBuffer);
+                if (running !== true) {
+                    clearInterval(i);
+                    console.debug("cleared encode");
+                }
             } catch (e) {
                 console.error("ERROR: Encoder error" + e);
             }
         }, 0);
+    console.debug("EXITED ENCODE");
     // }                           // 
-    if (running != true) {
-        clearInterval(i);
-    }
 }
 
 function decode() {
@@ -76,13 +78,15 @@ function decode() {
     let i = setInterval(() => {
             try {
                 transcoder.decodeBuffer(encodedRingBuffer, decodedRingBuffer);
+                if (running !== true) {
+                    clearInterval(i);
+                    console.debug("cleared decode");
+                }
             } catch (e) {
                 console.error("ERROR: Decoder error" + e);
             }
         }, 0);
-    if (running != true) {
-        clearInterval(i);
-    }
     // }
+    console.debug("EXITED DECODE");
 }
 

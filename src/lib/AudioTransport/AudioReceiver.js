@@ -35,6 +35,7 @@ function AudioReceiver(audioContext) {
     let bufferParams = BufferParamsFromURL(window.location.href);
     let bufferLengthInMs = bufferParams.ReceiverInputMS;
     let frameDurationMs = bufferParams.SenderFrameMS;
+    let senderEncodedBytes = bufferParams.SenderEncodedBytes;
     let bufferLengthInSamples = audioContext.sampleRate / (1000 / bufferLengthInMs);
     this.frameSize = audioContext.sampleRate / (1000 / frameDurationMs);
 
@@ -67,7 +68,7 @@ function AudioReceiver(audioContext) {
 		    // });
                     console.log("SET lengths");
                     console.log(bufferLengthInSamples);
-		    this.setBuffers(bufferLengthInSamples);
+		    this.setBuffers(bufferLengthInSamples, senderEncodedBytes);
 		    // connect the processor to mediaStreamDestination
 		    this.worklet.connect(this.mediaStreamDestination);
 
@@ -92,12 +93,12 @@ function AudioReceiver(audioContext) {
     return(ready);
 }
 
-AudioReceiver.prototype.setBuffers = function(bufferLengthInSamples) {
+AudioReceiver.prototype.setBuffers = function(bufferLengthInSamples, encodedBytes) {
     console.log("SET BUFFERS");
     console.log(bufferLengthInSamples);
     this.decodedSharedBuffer = RingBuffer.getStorageForCapacity(bufferLengthInSamples, Float32Array);
     this.decodedRingBuffer = new RingBuffer(this.decodedSharedBuffer, Float32Array);
-    this.encodedSharedBuffer = RingBuffer.getStorageForCapacity(bufferLengthInSamples, Uint8Array);
+    this.encodedSharedBuffer = RingBuffer.getStorageForCapacity(encodedBytes, Uint8Array);
     this.inputRingBuffer = new RingBuffer(this.encodedSharedBuffer, Uint8Array);
     // this.audioWriter = new AudioWriter(this.ringBuffer);
     // initialize audio worklet processor
